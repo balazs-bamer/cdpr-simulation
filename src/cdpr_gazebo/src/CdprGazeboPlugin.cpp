@@ -112,7 +112,7 @@ void gazebo::CdprGazeboPlugin::initCommunication() {
   mJointStates.effort.resize(cWireCount);
 
   mWireStatePublisher = mRosNode.advertise<cdpr_gazebo::WireStates>(cWireStatesTopic, cPublisherQueueSize);
-  mPlatformStatePublisher = mRosNode.advertise<geometry_msgs::PoseStamped>(cPlatformPoseTopic, cPublisherQueueSize);
+  mPlatformStatePublisher = mRosNode.advertise<cdpr_gazebo::PlatformState>(cPlatformPoseTopic, cPublisherQueueSize);
 }
 
 void gazebo::CdprGazeboPlugin::update() {
