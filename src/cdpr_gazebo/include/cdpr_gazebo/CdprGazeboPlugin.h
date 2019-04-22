@@ -26,9 +26,13 @@ private:
   static constexpr char          cSdfNameFrame[]                   = "frame";
   static constexpr char          cSdfNamePlatform[]                = "platform";
   static constexpr char          cLaunchParamPublishPeriod[]       = "/cdpr_gazebo_simulator/publishPeriod";
+  static constexpr char          cLaunchParamVelocityEpsilon[]     = "/cdpr_gazebo_simulator/velocityEpsilon";
   static constexpr char          cLaunchParamVelocityControllerP[] = "/cdpr_gazebo_simulator/velocityControllerP";
   static constexpr char          cLaunchParamVelocityControllerI[] = "/cdpr_gazebo_simulator/velocityControllerI";
   static constexpr char          cLaunchParamVelocityControllerD[] = "/cdpr_gazebo_simulator/velocityControllerD";
+  static constexpr char          cLaunchParamPositionControllerP[] = "/cdpr_gazebo_simulator/positionControllerP";
+  static constexpr char          cLaunchParamPositionControllerI[] = "/cdpr_gazebo_simulator/positionControllerI";
+  static constexpr char          cLaunchParamPositionControllerD[] = "/cdpr_gazebo_simulator/positionControllerD";
 
   ros::NodeHandle                mRosNode;
   ros::CallbackQueue             mCallbackQueue;
@@ -36,9 +40,12 @@ private:
   event::ConnectionPtr           mUpdateEvent;
   double                         mPublishPeriod;
   double                         mPreviousProcessingTime;
+  double                         mVelocityEpsilon;
 
   std::vector<std::string>       mJointNames;
   std::vector<physics::JointPtr> mJoints;
+  std::vector<double>            mLastPositionToHold;
+  std::vector<bool>              mPositionHeld;
 
   ros::Subscriber                mVelocityCommandSubscriber;
   sensor_msgs::Joy               mVelocityCommand;
@@ -62,27 +69,12 @@ public:
   virtual void Load(physics::ModelPtr aModel, sdf::ElementPtr aSdf);
 
 private:
-  void cableVelocityCommandCallback(const sensor_msgs::JoyConstPtr &aMsg) {
-    if(aMsg->axes.size() == cWireCount) {
-      mVelocityCommand = *aMsg;
-      mCommandReceived = true;
-    }
-    else { // nothing to do
-    }
-  }
-
+  void cableVelocityCommandCallback(const sensor_msgs::JoyConstPtr &aMsg);
   void obtainLinks();
   void initJointsAndController();
   void initCommunication();
   void update();
-
-  void updateJointVelocities() {
-    auto jointController = mPhysicsModel->GetJointController();
-    for(size_t i = 0; i < cWireCount; ++i) {
-      jointController->SetVelocityTarget(mJoints[i]->GetScopedName(), mVelocityCommand.axes[i]);
-    }
-  }
-  
+  void updateJointVelocities();
   void publishJointStates(ros::Time const &aNow);
   void publishPlatformState(ros::Time const &aNow);
 };

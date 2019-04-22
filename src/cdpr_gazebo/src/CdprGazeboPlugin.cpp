@@ -20,9 +20,13 @@ constexpr char gazebo::CdprGazeboPlugin::cSdfNameCable[];
 constexpr char gazebo::CdprGazeboPlugin::cSdfNameFrame[];
 constexpr char gazebo::CdprGazeboPlugin::cSdfNamePlatform[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPublishPeriod[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityEpsilon[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerP[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerD[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerP[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerI[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerD[];
 
 void gazebo::CdprGazeboPlugin::Load(physics::ModelPtr aModel, sdf::ElementPtr) {
   mPhysicsModel = aModel;
@@ -33,13 +37,38 @@ void gazebo::CdprGazeboPlugin::Load(physics::ModelPtr aModel, sdf::ElementPtr) {
   initCommunication();
 
   mRosNode.getParam(cLaunchParamPublishPeriod, mPublishPeriod);
-  gzdbg << "Publish period=" << mPublishPeriod << std::endl;
+  gzdbg << "Publish period = " << mPublishPeriod << std::endl;
   mPreviousProcessingTime = 0.0;
+  
+  mRosNode.getParam(cLaunchParamVelocityEpsilon, mVelocityEpsilon);
+  gzdbg << "Velocity epsilon below which position is held fix =" << mVelocityEpsilon << std::endl;
 
   mUpdateEvent = event::Events::ConnectWorldUpdateBegin(boost::bind(&CdprGazeboPlugin::update, this));
 
   ros::spinOnce();
   ROS_INFO("Started CDPR Plugin for %s.", aModel->GetName().c_str());
+}
+
+void gazebo::CdprGazeboPlugin::cableVelocityCommandCallback(const sensor_msgs::JoyConstPtr &aMsg) {
+  if(aMsg->axes.size() == cWireCount) {
+    mVelocityCommand = *aMsg;
+    mCommandReceived = true;
+    for(size_t i = 0; i < cWireCount; ++i) {
+      if(abs(mVelocityCommand.axes[i]) < mVelocityEpsilon) {
+        if(!mPositionHeld[i]) {
+          mPositionHeld[i] = true;
+          mLastPositionToHold[i] = mJoints[i]->Position();
+        }
+        else { // nothing to do
+        }
+      }
+      else {
+        mPositionHeld[i] = false;
+      }
+    }
+  }
+  else { // nothing to do
+  }
 }
 
 void gazebo::CdprGazeboPlugin::obtainLinks() {
@@ -57,16 +86,23 @@ void gazebo::CdprGazeboPlugin::obtainLinks() {
   
 void gazebo::CdprGazeboPlugin::initJointsAndController() {
   double pidP;
-  mRosNode.getParam(cLaunchParamVelocityControllerP, pidP);
   double pidI;
-  mRosNode.getParam(cLaunchParamVelocityControllerI, pidI);
   double pidD;
+  mRosNode.getParam(cLaunchParamVelocityControllerP, pidP);
+  mRosNode.getParam(cLaunchParamVelocityControllerI, pidI);
   mRosNode.getParam(cLaunchParamVelocityControllerD, pidD);
-  auto pidController = common::PID(pidP, pidI, pidD);
-  gzdbg << "PID: P=" << pidP << " I=" << pidI << " D=" << pidD << std::endl;
+  auto velocityPidController = common::PID(pidP, pidI, pidD);
+  gzdbg << "Velocity controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << std::endl;
+  mRosNode.getParam(cLaunchParamPositionControllerP, pidP);
+  mRosNode.getParam(cLaunchParamPositionControllerI, pidI);
+  mRosNode.getParam(cLaunchParamPositionControllerD, pidD);
+  auto positionPidController = common::PID(pidP, pidI, pidD);
+  gzdbg << "Position controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << std::endl;
 
   mJoints.resize(cWireCount);
   mJointNames.resize(cWireCount);
+  mLastPositionToHold.resize(cWireCount);
+  mPositionHeld.resize(cWireCount);
   auto jointController = mPhysicsModel->GetJointController();
   size_t jointsRead = 0u; 
   for(size_t i = 0u; i < mPhysicsModel->GetJointCount(); ++i) {
@@ -81,8 +117,12 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
         ++jointsRead;
         mJoints[index] = joint;
         mJointNames[index] = name;
+        mLastPositionToHold[index] = joint->Position();
+        mPositionHeld[index] = true;
         jointController->AddJoint(joint);
-        jointController->SetVelocityPID(joint->GetScopedName(), pidController);
+        jointController->SetVelocityPID(joint->GetScopedName(), velocityPidController);
+        jointController->SetPositionPID(joint->GetScopedName(), positionPidController);
+        jointController->SetPositionTarget(joint->GetScopedName(), mLastPositionToHold[index]);
       }
       else { // nothing to do
       }
@@ -136,6 +176,18 @@ void gazebo::CdprGazeboPlugin::update() {
   else { // nothing to do
   }
   ros::spinOnce();
+}
+
+void gazebo::CdprGazeboPlugin::updateJointVelocities() {
+  auto jointController = mPhysicsModel->GetJointController();
+  for(size_t i = 0; i < cWireCount; ++i) {
+    if(mPositionHeld[i]) {
+      jointController->SetPositionTarget(mJoints[i]->GetScopedName(), mLastPositionToHold[i]);
+    }
+    else {
+      jointController->SetVelocityTarget(mJoints[i]->GetScopedName(), mVelocityCommand.axes[i]);
+    }
+  }
 }
   
 void gazebo::CdprGazeboPlugin::publishJointStates(ros::Time const &aNow) {
