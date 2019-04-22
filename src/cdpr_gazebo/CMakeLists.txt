@@ -138,9 +138,11 @@ target_link_libraries(cdpr_gazebo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES}
 add_dependencies(cdpr_gazebo_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(sinevelocitytest src/sinevelocitytest.cpp)
+add_executable(squarevelocitytest src/squarevelocitytest.cpp)
 target_link_libraries(sinevelocitytest ${catkin_LIBRARIES})
+target_link_libraries(squarevelocitytest ${catkin_LIBRARIES})
 add_dependencies(sinevelocitytest ${${PROJECT_NAME}_EXPORTED_TARGETS})
-#add_dependencies(sinevelocitytest beginner_tutorials_generate_messages_cpp)
+add_dependencies(squarevelocitytest ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 
 # CDPR class to interface with Gazebo
