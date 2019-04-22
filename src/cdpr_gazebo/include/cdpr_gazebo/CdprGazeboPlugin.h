@@ -18,7 +18,7 @@ private:
   static constexpr size_t        cWireCount                        =   4u;
   static constexpr size_t        cSubscriberQueueSize              = 256u;
   static constexpr size_t        cPublisherQueueSize               = 256u;
-  static constexpr char          cVelocityTopic[]                  = "jointValocities";
+  static constexpr char          cVelocityTopic[]                  = "jointVelocities";
   static constexpr char          cCableStatesTopic[]               = "jointStates";
   static constexpr char          cWireStatesTopic[]                = "wireStates";
   static constexpr char          cPlatformPoseTopic[]              = "platformPose";
