@@ -44,13 +44,10 @@ private:
 
   std::vector<std::string>       mJointNames;
   std::vector<physics::JointPtr> mJoints;
-  std::vector<double>            mLastPositionToHold;
-  std::vector<bool>              mPositionHeld;
 
   ros::CallbackQueue             mVelocityCallbackQueue;
   ros::Subscriber                mVelocityCommandSubscriber;
   sensor_msgs::Joy               mVelocityCommand;
-  bool                           mVelocityCommandReceived;
 
   ros::CallbackQueue             mPositionCallbackQueue;
   ros::Subscriber                mPositionCommandSubscriber; // only for adjusting PID or debugging

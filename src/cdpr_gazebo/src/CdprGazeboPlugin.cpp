@@ -53,20 +53,6 @@ void gazebo::CdprGazeboPlugin::Load(physics::ModelPtr aModel, sdf::ElementPtr) {
 void gazebo::CdprGazeboPlugin::cableVelocityCommandCallback(const sensor_msgs::JoyConstPtr &aMsg) {
   if(aMsg->axes.size() == cWireCount) {
     mVelocityCommand = *aMsg;
-    mVelocityCommandReceived = true;
-    for(size_t i = 0; i < cWireCount; ++i) {
-      if(abs(mVelocityCommand.axes[i]) < mVelocityEpsilon) {
-        if(!mPositionHeld[i]) {
-          mPositionHeld[i] = true;
-          mLastPositionToHold[i] = mJoints[i]->Position();
-        }
-        else { // nothing to do
-        }
-      }
-      else {
-        mPositionHeld[i] = false;
-      }
-    }
   }
   else { // nothing to do
   }
@@ -111,8 +97,6 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
 
   mJoints.resize(cWireCount);
   mJointNames.resize(cWireCount);
-  mLastPositionToHold.resize(cWireCount);
-  mPositionHeld.resize(cWireCount);
   auto jointController = mPhysicsModel->GetJointController();
   size_t jointsRead = 0u; 
   for(size_t i = 0u; i < mPhysicsModel->GetJointCount(); ++i) {
@@ -127,12 +111,9 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
         ++jointsRead;
         mJoints[index] = joint;
         mJointNames[index] = name;
-        mLastPositionToHold[index] = joint->Position();
-        mPositionHeld[index] = true;
         jointController->AddJoint(joint);
         jointController->SetVelocityPID(joint->GetScopedName(), velocityPidController);
         jointController->SetPositionPID(joint->GetScopedName(), positionPidController);
-        jointController->SetPositionTarget(joint->GetScopedName(), mLastPositionToHold[index]);
       }
       else { // nothing to do
       }
@@ -153,7 +134,9 @@ void gazebo::CdprGazeboPlugin::initCommunication() {
                   boost::bind(&CdprGazeboPlugin::cableVelocityCommandCallback, this, _1),
                   ros::VoidPtr(), &mVelocityCallbackQueue);
   mVelocityCommandSubscriber = mRosNode.subscribe(subscribeOptions);
-  mVelocityCommandReceived = false;
+  mVelocityCommand.axes.resize(cWireCount);
+  std::fill(mVelocityCommand.axes.begin(), mVelocityCommand.axes.end(), 0.0);
+
   subscribeOptions = ros::SubscribeOptions::create<sensor_msgs::Joy>(cPositionTopic, cSubscriberQueueSize,
                   boost::bind(&CdprGazeboPlugin::cablePositionCommandCallback, this, _1),
                   ros::VoidPtr(), &mPositionCallbackQueue);
@@ -174,11 +157,8 @@ void gazebo::CdprGazeboPlugin::update() {
   mVelocityCallbackQueue.callAvailable();
   mPositionCallbackQueue.callAvailable();
 
-  if(mVelocityCommandReceived) {
-    updateJointVelocities();
-  }
-  else { // nothing to do
-  }
+  updateJointVelocities();
+
   if(mPositionCommandReceived) {
     updateJointPositions();
   }
@@ -204,12 +184,7 @@ void gazebo::CdprGazeboPlugin::update() {
 void gazebo::CdprGazeboPlugin::updateJointVelocities() {
   auto jointController = mPhysicsModel->GetJointController();
   for(size_t i = 0; i < cWireCount; ++i) {
-    if(mPositionHeld[i]) {
-      jointController->SetPositionTarget(mJoints[i]->GetScopedName(), mLastPositionToHold[i]);
-    }
-    else {
-      jointController->SetVelocityTarget(mJoints[i]->GetScopedName(), mVelocityCommand.axes[i]);
-    }
+    jointController->SetVelocityTarget(mJoints[i]->GetScopedName(), mVelocityCommand.axes[i]);
   }
 }
   
