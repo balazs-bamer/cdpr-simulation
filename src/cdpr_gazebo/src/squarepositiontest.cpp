@@ -4,9 +4,9 @@
 
 int main(int argc, char **argv) {
   const double cPublishFrequency  = 10.0; // Hz
-  const double cPositionAmplitude =  0.2; // m
+  const double cPositionAmplitude =  0.3; // m
   const double cPositionBias      =  0.5; // m
-  const double cPositionFrequency =  0.2; // Hz
+  const double cPositionFrequency =  0.1; // Hz
   const size_t cWireCount         =  4u;
 
   ros::init(argc, argv, "squarepositiontest");
@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
   double time = 0.0;
   while (ros::ok()) {
     double sine = sin(time * cPositionFrequency * 2 * M_PI);
-    double position = cPositionBias + (abs(sine) >= sqrt(0.5) ? copysign(cPositionAmplitude, sine) : 0.0);
+    double position = cPositionBias + copysign(cPositionAmplitude, sine);
     for(size_t i = 0; i < cWireCount; ++i) {
       positionCommand.axes[i] = position;
     }
