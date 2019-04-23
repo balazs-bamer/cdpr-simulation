@@ -15,7 +15,7 @@
   <!-- spawn robot -->
   <node name="cdpr_gazebo_simulator" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-sdf -model cube -file $(find cdpr_gazebo)/sdf/cube.sdf -x 0.0 -y -0.0 -z 0.0 -R 0.0 -P 0.0 -Y 0.0">
     <param name="publishPeriod"       value="0.0" />
-    <param name="velocityEpsilon"     value="0.001" />
+    <param name="velocityEpsilon"     value="0.00" />
     <param name="velocityControllerP" value="20.0" />
     <param name="velocityControllerI" value="0.0" />
     <param name="velocityControllerD" value="0.0" />
