@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv) {
   const double cPublishFrequency  = 10.0; // Hz
-  const double cVelocityAmplitude =  0.5; // m/s
+  const double cVelocityAmplitude =  0.1; // m/s
   const double cVelocityFrequency =  0.2; // Hz
   const size_t cWireCount         =  4u;
 
@@ -18,7 +18,8 @@ int main(int argc, char **argv) {
 
   double time = 0.0;
   while (ros::ok()) {
-    double velocity = copysign(cVelocityAmplitude, sin(time * cVelocityFrequency * 2 * M_PI));
+    double sine = sin(time * cVelocityFrequency * 2 * M_PI);
+    double velocity = abs(sine) >= sqrt(0.5) ? copysign(cVelocityAmplitude, sine) : 0.0;
     for(size_t i = 0; i < cWireCount; ++i) {
       velocityCommand.axes[i] = velocity;
     }
