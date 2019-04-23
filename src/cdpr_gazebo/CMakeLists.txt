@@ -139,10 +139,13 @@ add_dependencies(cdpr_gazebo_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(sinevelocitytest src/sinevelocitytest.cpp)
 add_executable(squarevelocitytest src/squarevelocitytest.cpp)
+add_executable(squarepositiontest src/squarepositiontest.cpp)
 target_link_libraries(sinevelocitytest ${catkin_LIBRARIES})
 target_link_libraries(squarevelocitytest ${catkin_LIBRARIES})
+target_link_libraries(squarepositiontest ${catkin_LIBRARIES})
 add_dependencies(sinevelocitytest ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(squarevelocitytest ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(squarepositiontest ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 
 # CDPR class to interface with Gazebo
