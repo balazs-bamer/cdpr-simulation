@@ -13,6 +13,7 @@
 #include <string>
 
 constexpr char gazebo::CdprGazeboPlugin::cVelocityTopic[];
+constexpr char gazebo::CdprGazeboPlugin::cPositionTopic[];
 constexpr char gazebo::CdprGazeboPlugin::cCableStatesTopic[];
 constexpr char gazebo::CdprGazeboPlugin::cWireStatesTopic[];
 constexpr char gazebo::CdprGazeboPlugin::cPlatformPoseTopic[];
@@ -52,7 +53,7 @@ void gazebo::CdprGazeboPlugin::Load(physics::ModelPtr aModel, sdf::ElementPtr) {
 void gazebo::CdprGazeboPlugin::cableVelocityCommandCallback(const sensor_msgs::JoyConstPtr &aMsg) {
   if(aMsg->axes.size() == cWireCount) {
     mVelocityCommand = *aMsg;
-    mCommandReceived = true;
+    mVelocityCommandReceived = true;
     for(size_t i = 0; i < cWireCount; ++i) {
       if(abs(mVelocityCommand.axes[i]) < mVelocityEpsilon) {
         if(!mPositionHeld[i]) {
@@ -66,6 +67,15 @@ void gazebo::CdprGazeboPlugin::cableVelocityCommandCallback(const sensor_msgs::J
         mPositionHeld[i] = false;
       }
     }
+  }
+  else { // nothing to do
+  }
+}
+
+void gazebo::CdprGazeboPlugin::cablePositionCommandCallback(const sensor_msgs::JoyConstPtr &aMsg) {
+  if(aMsg->axes.size() == cWireCount) {
+    mPositionCommand = *aMsg;
+    mPositionCommandReceived = true;
   }
   else { // nothing to do
   }
@@ -141,9 +151,14 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
 void gazebo::CdprGazeboPlugin::initCommunication() {
   ros::SubscribeOptions subscribeOptions = ros::SubscribeOptions::create<sensor_msgs::Joy>(cVelocityTopic, cSubscriberQueueSize,
                   boost::bind(&CdprGazeboPlugin::cableVelocityCommandCallback, this, _1),
-                  ros::VoidPtr(), &mCallbackQueue);
+                  ros::VoidPtr(), &mVelocityCallbackQueue);
   mVelocityCommandSubscriber = mRosNode.subscribe(subscribeOptions);
-  mCommandReceived = false;
+  mVelocityCommandReceived = false;
+  subscribeOptions = ros::SubscribeOptions::create<sensor_msgs::Joy>(cPositionTopic, cSubscriberQueueSize,
+                  boost::bind(&CdprGazeboPlugin::cablePositionCommandCallback, this, _1),
+                  ros::VoidPtr(), &mPositionCallbackQueue);
+  mPositionCommandSubscriber = mRosNode.subscribe(subscribeOptions);
+  mPositionCommandReceived = false;
 
   mJointStatePublisher = mRosNode.advertise<sensor_msgs::JointState>(cCableStatesTopic, cPublisherQueueSize);
   mJointStates.name = mJointNames;
@@ -156,10 +171,18 @@ void gazebo::CdprGazeboPlugin::initCommunication() {
 }
 
 void gazebo::CdprGazeboPlugin::update() {
-  mCallbackQueue.callAvailable();
+  mVelocityCallbackQueue.callAvailable();
+  mPositionCallbackQueue.callAvailable();
 
-  if(mCommandReceived) {
+  if(mVelocityCommandReceived) {
     updateJointVelocities();
+  }
+  else { // nothing to do
+  }
+  if(mPositionCommandReceived) {
+    updateJointPositions();
+  }
+  else { // nothing to do
   }
 
   // TODO develop logic for wire state publishing
@@ -187,6 +210,13 @@ void gazebo::CdprGazeboPlugin::updateJointVelocities() {
     else {
       jointController->SetVelocityTarget(mJoints[i]->GetScopedName(), mVelocityCommand.axes[i]);
     }
+  }
+}
+  
+void gazebo::CdprGazeboPlugin::updateJointPositions() {
+  auto jointController = mPhysicsModel->GetJointController();
+  for(size_t i = 0; i < cWireCount; ++i) {
+    jointController->SetPositionTarget(mJoints[i]->GetScopedName(), mPositionCommand.axes[i]);
   }
 }
   

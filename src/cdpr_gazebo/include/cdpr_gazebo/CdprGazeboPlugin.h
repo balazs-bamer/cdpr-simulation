@@ -19,6 +19,7 @@ private:
   static constexpr size_t        cSubscriberQueueSize              = 256u;
   static constexpr size_t        cPublisherQueueSize               = 256u;
   static constexpr char          cVelocityTopic[]                  = "jointVelocities";
+  static constexpr char          cPositionTopic[]                  = "jointPositions";
   static constexpr char          cCableStatesTopic[]               = "jointStates";
   static constexpr char          cWireStatesTopic[]                = "wireStates";
   static constexpr char          cPlatformPoseTopic[]              = "platformPose";
@@ -35,7 +36,6 @@ private:
   static constexpr char          cLaunchParamPositionControllerD[] = "/cdpr_gazebo_simulator/positionControllerD";
 
   ros::NodeHandle                mRosNode;
-  ros::CallbackQueue             mCallbackQueue;
   physics::ModelPtr              mPhysicsModel;
   event::ConnectionPtr           mUpdateEvent;
   double                         mPublishPeriod;
@@ -47,9 +47,15 @@ private:
   std::vector<double>            mLastPositionToHold;
   std::vector<bool>              mPositionHeld;
 
+  ros::CallbackQueue             mVelocityCallbackQueue;
   ros::Subscriber                mVelocityCommandSubscriber;
   sensor_msgs::Joy               mVelocityCommand;
-  bool                           mCommandReceived;
+  bool                           mVelocityCommandReceived;
+
+  ros::CallbackQueue             mPositionCallbackQueue;
+  ros::Subscriber                mPositionCommandSubscriber; // only for adjusting PID or debugging
+  sensor_msgs::Joy               mPositionCommand;
+  bool                           mPositionCommandReceived;
 
   ros::Publisher                 mJointStatePublisher;
   sensor_msgs::JointState        mJointStates;               // we keep it here to avoid re-creation on stack
@@ -70,11 +76,13 @@ public:
 
 private:
   void cableVelocityCommandCallback(const sensor_msgs::JoyConstPtr &aMsg);
+  void cablePositionCommandCallback(const sensor_msgs::JoyConstPtr &aMsg);
   void obtainLinks();
   void initJointsAndController();
   void initCommunication();
   void update();
   void updateJointVelocities();
+  void updateJointPositions();
   void publishJointStates(ros::Time const &aNow);
   void publishPlatformState(ros::Time const &aNow);
 };
