@@ -10,18 +10,33 @@
     <arg name="gui" value="$(arg gui)"/>
     <arg name="paused" value="$(arg paused)"/>
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
-  </include >
+  </include>
   
   <!-- spawn robot -->
   <node name="cdpr_gazebo_simulator" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-sdf -model cube -file $(find cdpr_gazebo)/sdf/cube.sdf -x 0.0 -y -0.0 -z 0.0 -R 0.0 -P 0.0 -Y 0.0">
     <param name="publishPeriod"       value="0.0" />
-    <param name="velocityEpsilon"     value="0.0001" />
-    <param name="velocityControllerP" value="1000.0" />
-    <param name="velocityControllerI" value="50.0" />
+    <param name="velocityEpsilon"     value="0.00" />
+    <param name="velocityControllerP" value="20.0" />
+    <param name="velocityControllerI" value="0.0" />
     <param name="velocityControllerD" value="0.0" />
-    <param name="positionControllerP" value="200.0" /> <!-- Tu=160 ms at Ku=1000, go for no overshoot -->
-    <param name="positionControllerI" value="2500.0" />
-    <param name="positionControllerD" value="10.666" />
+<!-- Tu=0.498 s at Ku=100, Ziegler-Nichols some overshoot>
+    <param name="positionControllerP" value="33.33333" /> 
+    <param name="positionControllerI" value="33.87" />
+    <param name="positionControllerD" value="4.983" />
+    <param name="positionControllerMaxI" value="100.0" />
+    <param name="positionControllerMaxCmd" value="100.0" /-->
+<!-- Tu=0.498 s at Ku=100, Ziegler-Nichols no overshoot-->
+    <param name="positionControllerP" value="20.0" /> 
+    <param name="positionControllerI" value="80.3" />
+    <param name="positionControllerD" value="3.32" />
+    <param name="positionControllerMaxI" value="100.0" />
+    <param name="positionControllerMaxCmd" value="100.0" />
+<!-- Tu=0.76 s at Ku=50, Ziegler-Nichols no overshoot>
+    <param name="positionControllerP" value="10.0" /> 
+    <param name="positionControllerI" value="26.31" />
+    <param name="positionControllerD" value="2.53" />
+    <param name="positionControllerMaxI" value="100.0" />
+    <param name="positionControllerMaxCmd" value="100.0" /-->
   </node>
   
   <!-- load model description -->

@@ -15,27 +15,31 @@ namespace gazebo {
 
 class CdprGazeboPlugin : public ModelPlugin {
 private:
-  static constexpr size_t        cWireCount                        =   4u;
-  static constexpr size_t        cSubscriberQueueSize              = 256u;
-  static constexpr size_t        cPublisherQueueSize               = 256u;
-  static constexpr char          cVelocityTopic[]                  = "jointVelocities";
-  static constexpr char          cCableStatesTopic[]               = "jointStates";
-  static constexpr char          cWireStatesTopic[]                = "wireStates";
-  static constexpr char          cPlatformPoseTopic[]              = "platformPose";
-  static constexpr char          cSdfNameCable[]                   = "cable";
-  static constexpr char          cSdfNameFrame[]                   = "frame";
-  static constexpr char          cSdfNamePlatform[]                = "platform";
-  static constexpr char          cLaunchParamPublishPeriod[]       = "/cdpr_gazebo_simulator/publishPeriod";
-  static constexpr char          cLaunchParamVelocityEpsilon[]     = "/cdpr_gazebo_simulator/velocityEpsilon";
-  static constexpr char          cLaunchParamVelocityControllerP[] = "/cdpr_gazebo_simulator/velocityControllerP";
-  static constexpr char          cLaunchParamVelocityControllerI[] = "/cdpr_gazebo_simulator/velocityControllerI";
-  static constexpr char          cLaunchParamVelocityControllerD[] = "/cdpr_gazebo_simulator/velocityControllerD";
-  static constexpr char          cLaunchParamPositionControllerP[] = "/cdpr_gazebo_simulator/positionControllerP";
-  static constexpr char          cLaunchParamPositionControllerI[] = "/cdpr_gazebo_simulator/positionControllerI";
-  static constexpr char          cLaunchParamPositionControllerD[] = "/cdpr_gazebo_simulator/positionControllerD";
+  static constexpr size_t        cWireCount                             =   4u;
+  static constexpr size_t        cSubscriberQueueSize                   = 256u;
+  static constexpr size_t        cPublisherQueueSize                    = 256u;
+  static constexpr char          cVelocityTopic[]                       = "jointVelocities";
+  static constexpr char          cPositionTopic[]                       = "jointPositions";
+  static constexpr char          cCableStatesTopic[]                    = "jointStates";
+  static constexpr char          cWireStatesTopic[]                     = "wireStates";
+  static constexpr char          cPlatformPoseTopic[]                   = "platformPose";
+  static constexpr char          cSdfNameCable[]                        = "cable";
+  static constexpr char          cSdfNameFrame[]                        = "frame";
+  static constexpr char          cSdfNamePlatform[]                     = "platform";
+  static constexpr char          cLaunchParamPublishPeriod[]            = "/cdpr_gazebo_simulator/publishPeriod";
+  static constexpr char          cLaunchParamVelocityEpsilon[]          = "/cdpr_gazebo_simulator/velocityEpsilon";
+  static constexpr char          cLaunchParamVelocityControllerP[]      = "/cdpr_gazebo_simulator/velocityControllerP";
+  static constexpr char          cLaunchParamVelocityControllerI[]      = "/cdpr_gazebo_simulator/velocityControllerI";
+  static constexpr char          cLaunchParamVelocityControllerD[]      = "/cdpr_gazebo_simulator/velocityControllerD";
+  static constexpr char          cLaunchParamVelocityControllerMaxI[]   = "/cdpr_gazebo_simulator/velocityControllerMaxI";
+  static constexpr char          cLaunchParamVelocityControllerMaxCmd[] = "/cdpr_gazebo_simulator/velocityControllerMaxCmd";
+  static constexpr char          cLaunchParamPositionControllerP[]      = "/cdpr_gazebo_simulator/positionControllerP";
+  static constexpr char          cLaunchParamPositionControllerI[]      = "/cdpr_gazebo_simulator/positionControllerI";
+  static constexpr char          cLaunchParamPositionControllerD[]      = "/cdpr_gazebo_simulator/positionControllerD";
+  static constexpr char          cLaunchParamPositionControllerMaxI[]   = "/cdpr_gazebo_simulator/positionControllerMaxI";
+  static constexpr char          cLaunchParamPositionControllerMaxCmd[] = "/cdpr_gazebo_simulator/positionControllerMaxCmd";
 
   ros::NodeHandle                mRosNode;
-  ros::CallbackQueue             mCallbackQueue;
   physics::ModelPtr              mPhysicsModel;
   event::ConnectionPtr           mUpdateEvent;
   double                         mPublishPeriod;
@@ -47,9 +51,15 @@ private:
   std::vector<double>            mLastPositionToHold;
   std::vector<bool>              mPositionHeld;
 
+  ros::CallbackQueue             mVelocityCallbackQueue;
   ros::Subscriber                mVelocityCommandSubscriber;
   sensor_msgs::Joy               mVelocityCommand;
-  bool                           mCommandReceived;
+  bool                           mVelocityCommandReceived;
+
+  ros::CallbackQueue             mPositionCallbackQueue;
+  ros::Subscriber                mPositionCommandSubscriber; // only for adjusting PID or debugging
+  sensor_msgs::Joy               mPositionCommand;
+  bool                           mPositionCommandReceived;
 
   ros::Publisher                 mJointStatePublisher;
   sensor_msgs::JointState        mJointStates;               // we keep it here to avoid re-creation on stack
@@ -70,11 +80,13 @@ public:
 
 private:
   void cableVelocityCommandCallback(const sensor_msgs::JoyConstPtr &aMsg);
+  void cablePositionCommandCallback(const sensor_msgs::JoyConstPtr &aMsg);
   void obtainLinks();
   void initJointsAndController();
   void initCommunication();
   void update();
   void updateJointVelocities();
+  void updateJointPositions();
   void publishJointStates(ros::Time const &aNow);
   void publishPlatformState(ros::Time const &aNow);
 };

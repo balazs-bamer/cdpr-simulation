@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
   double time = 0.0;
   while (ros::ok()) {
-    double velocity = cVelocityAmplitude * sin(time * cVelocityFrequency * 2 * M_PI);
+    double velocity = cVelocityAmplitude * -sin(time * cVelocityFrequency * 2 * M_PI);
     for(size_t i = 0; i < cWireCount; ++i) {
       velocityCommand.axes[i] = velocity;
     }
