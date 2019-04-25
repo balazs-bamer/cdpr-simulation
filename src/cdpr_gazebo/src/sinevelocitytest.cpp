@@ -4,8 +4,8 @@
 
 int main(int argc, char **argv) {
   const double cPublishFrequency  = 10.0; // Hz
-  const double cVelocityAmplitude =  0.1; // m/s
-  const double cVelocityFrequency =  0.2; // Hz
+  const double cVelocityAmplitude =  0.2; // m/s
+  const double cVelocityFrequency =  0.05; // Hz
   const size_t cWireCount         =  4u;
 
   ros::init(argc, argv, "sinevelocitytest");
