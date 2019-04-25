@@ -5,7 +5,7 @@
 int main(int argc, char **argv) {
   const double cPublishFrequency  = 10.0; // Hz
   const double cPositionAmplitude =  0.3; // m
-  const double cPositionBias      =  0.5; // m
+  const double cPositionBias      =  0.0; // m
   const double cPositionFrequency =  0.1; // Hz
   const size_t cWireCount         =  4u;
 
