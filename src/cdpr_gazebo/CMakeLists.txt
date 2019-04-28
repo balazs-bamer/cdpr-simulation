@@ -133,7 +133,13 @@ include_directories(
 
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
-add_library(cdpr_gazebo_plugin src/CdprGazeboPlugin.cpp include/cdpr_gazebo/CdprGazeboPlugin.h)
+add_library(cdpr_gazebo_plugin
+  src/Pid.cpp
+  src/JointForceCalculator.cpp
+  src/CdprGazeboPlugin.cpp
+  include/cdpr_gazebo/Pid.h
+  include/cdpr_gazebo/JointForceCalculator.h
+  include/cdpr_gazebo/CdprGazeboPlugin.h)
 target_link_libraries(cdpr_gazebo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(cdpr_gazebo_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS})
 

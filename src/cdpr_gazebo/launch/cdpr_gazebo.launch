@@ -16,23 +16,28 @@
   <node name="cdpr_gazebo_simulator" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-sdf -model cube -file $(find cdpr_gazebo)/sdf/cube.sdf -x 0.0 -y -0.0 -z 0.0 -R 0.0 -P 0.0 -Y 0.0">
     <param name="publishPeriod"       value="0.0" />
     <param name="velocityEpsilon"     value="0.0" />
-    <param name="velocityControllerP" value="100.0" />
+    <!--param name="velocityControllerP" value="100.0" />
     <param name="velocityControllerI" value="0.0" />
     <param name="velocityControllerD" value="0.0" />
     <param name="velocityControllerMaxI" value="100.0" />
-    <param name="velocityControllerMaxCmd" value="100.0" />
-<!-- Tu=6.61 s at Ku=100, Ziegler-Nichols no overshoot, fails>
+    <param name="velocityControllerMaxCmd" value="100.0" /-->
+<!--param name="velocityControllerP" value="20.0" />
+ <param name="velocityControllerI" value="0" />
+  <param name="velocityControllerD" value="10" />
+   <param name="velocityControllerMaxI" value="10000.0" />
+    <param name="velocityControllerMaxCmd" value="10000.0" /-->
+<!-- Tu=6.61 s at Ku=100, Ziegler-Nichols no overshoot, fails-->
     <param name="velocityControllerP" value="20.0" />
     <param name="velocityControllerI" value="6.051" />
     <param name="velocityControllerD" value="44.066" />
-    <param name="velocityControllerMaxI" value="100.0" />
-    <param name="velocityControllerMaxCmd" value="100.0" /-->
+    <param name="velocityControllerMaxI" value="1000.0" />
+    <param name="velocityControllerMaxCmd" value="10000.0" />
 <!-- Tu=0.4 s at Ku=100, Ziegler-Nichols no overshoot with more agressive D-->
     <param name="positionControllerP" value="20.0" /> 
     <param name="positionControllerI" value="100" />
     <param name="positionControllerD" value="6" />
-    <param name="positionControllerMaxI" value="100.0" />
-    <param name="positionControllerMaxCmd" value="100.0" />
+    <param name="positionControllerMaxI" value="1000.0" />
+    <param name="positionControllerMaxCmd" value="10000.0" />
 <!-- Tu=0.4 s at Ku=100, Ziegler-Nichols no overshoot>
     <param name="positionControllerP" value="20.0" /> 
     <param name="positionControllerI" value="100" />

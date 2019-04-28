@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv) {
   const double cPublishFrequency  = 10.0; // Hz
-  const double cVelocityAmplitude =  0.05; // m/s
+  const double cVelocityAmplitude =  0.0; //5; // m/s
   const double cVelocityFrequency =  0.025; // Hz
   const size_t cWireCount         =  4u;
 

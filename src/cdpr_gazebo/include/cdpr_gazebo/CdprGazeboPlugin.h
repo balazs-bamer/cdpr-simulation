@@ -11,6 +11,8 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/PoseStamped.h>
 
+#include "cdpr_gazebo/JointForceCalculator.h"
+
 namespace gazebo {
 
 class CdprGazeboPlugin : public ModelPlugin {
@@ -48,8 +50,7 @@ private:
 
   std::vector<std::string>       mJointNames;
   std::vector<physics::JointPtr> mJoints;
-  std::vector<double>            mLastPositionToHold;
-  std::vector<bool>              mPositionHeld;
+  std::vector<physics::JointForceCalculators> mForceCalculators;
 
   ros::CallbackQueue             mVelocityCallbackQueue;
   ros::Subscriber                mVelocityCommandSubscriber;
@@ -85,8 +86,6 @@ private:
   void initJointsAndController();
   void initCommunication();
   void update();
-  void updateJointVelocities();
-  void updateJointPositions();
   void publishJointStates(ros::Time const &aNow);
   void publishPlatformState(ros::Time const &aNow);
 };
