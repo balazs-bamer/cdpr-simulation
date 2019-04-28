@@ -184,8 +184,8 @@ void gazebo::CdprGazeboPlugin::update() {
   }
   else { // nothing to do
   }
-  for(auto &forceCalculator : mForceCalculators) {
-    forceCalculator.update();
+  for(size_t i = 0; i < cWireCount; ++i) {
+    mJoints[i].SetForce(mForceCalculators[i].update());
   }
 
   // TODO develop logic for wire state publishing
