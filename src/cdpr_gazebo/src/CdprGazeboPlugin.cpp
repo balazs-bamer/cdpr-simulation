@@ -28,11 +28,15 @@ constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerD[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerMaxI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerMaxCmd[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerPcoeff[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDcoeff[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerP[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerD[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerMaxI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerMaxCmd[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerPcoeff[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerDcoeff[];
 
 void gazebo::CdprGazeboPlugin::Load(physics::ModelPtr aModel, sdf::ElementPtr) {
   mPhysicsModel = aModel;
@@ -87,43 +91,42 @@ void gazebo::CdprGazeboPlugin::obtainLinks() {
 }
   
 void gazebo::CdprGazeboPlugin::initJointsAndController() {
-  double pidP;
-  double pidI;
-  double pidD;
-  double pidMaxI;
-  double pidMaxCmd;
+  double pidP, pidI, pidD, pidMaxI, pidMaxCmd, pCoeff, dCoeff;
+
   mRosNode.getParam(cLaunchParamVelocityControllerP, pidP);
   mRosNode.getParam(cLaunchParamVelocityControllerI, pidI);
   mRosNode.getParam(cLaunchParamVelocityControllerD, pidD);
   mRosNode.getParam(cLaunchParamVelocityControllerMaxI, pidMaxI);
   mRosNode.getParam(cLaunchParamVelocityControllerMaxCmd, pidMaxCmd);
-  auto velocityPidController = common::PID(pidP, pidI, pidD, pidMaxI, -pidMaxI, pidMaxCmd, -pidMaxCmd);
-mTestPid.Init(pidP, pidI, pidD, pidMaxI, -pidMaxI, pidMaxCmd, -pidMaxCmd);
-  gzdbg << "Velocity controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd<< std::endl;
+  mRosNode.getParam(cLaunchParamVelocityControllerPcoeff, pCoeff);
+  mRosNode.getParam(cLaunchParamVelocityControllerDcoeff, dCoeff);
+  auto velocityPidController = common::Pid(pidP, pidI, pidD, pidMaxI, -pidMaxI, pidMaxCmd, -pidMaxCmd, pCoeff, dCoeff);
+
+  gzdbg << "Velocity controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd << "  pCoeff = " << pCoeff << "  dCoeff = " << dCoeff << std::endl;
   mRosNode.getParam(cLaunchParamPositionControllerP, pidP);
   mRosNode.getParam(cLaunchParamPositionControllerI, pidI);
   mRosNode.getParam(cLaunchParamPositionControllerD, pidD);
   mRosNode.getParam(cLaunchParamPositionControllerMaxI, pidMaxI);
   mRosNode.getParam(cLaunchParamPositionControllerMaxCmd, pidMaxCmd);
-  auto positionPidController = common::PID(pidP, pidI, pidD, pidMaxI, -pidMaxI, pidMaxCmd, -pidMaxCmd);
-  gzdbg << "Position controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd<< std::endl;
+  mRosNode.getParam(cLaunchParamPositionControllerPcoeff, pCoeff);
+  mRosNode.getParam(cLaunchParamPositionControllerDcoeff, dCoeff);
+  auto positionPidController = common::Pid(pidP, pidI, pidD, pidMaxI, -pidMaxI, pidMaxCmd, -pidMaxCmd, pCoeff, dCoeff);
+  gzdbg << "Position controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd << "  pCoeff = " << pCoeff << "  dCoeff = " << dCoeff << std::endl;
 
   mJoints.resize(cWireCount);
   mJointNames.resize(cWireCount);
-  mForceCalculators.resize(cWireCount);
+  mForceCalculators.resize(cWireCount, gazebo::physics::JointForceCalculator(mPhysicsModel, gazebo::physics::JointPtr(nullptr), positionPidController, velocityPidController));
 
   auto jointController = mPhysicsModel->GetJointController();
   size_t jointsRead = 0u; 
   for(size_t i = 0u; i < mPhysicsModel->GetJointCount(); ++i) {
-    std::string name;
-    physics::JointPtr joint;
-    joint = mPhysicsModel->GetJoints()[i];
-    name = joint->GetName();
+    physics::JointPtr joint = mPhysicsModel->GetJoints()[i];
+    std::string name = joint->GetName();
 
     if(name.find(cSdfNameCable) == 0u) {
       size_t indexCableFound = stoul(name.substr(std::strlen(cSdfNameCable)));
       if(indexCableFound < cWireCount) {
-        JointForceCalculator(mPhysicsModel, joint, positionPidController, velocityPidController);
+        gazebo::physics::JointForceCalculator forceCalculator(mPhysicsModel, joint, positionPidController, velocityPidController);
         forceCalculator.setPositionTarget(joint->Position());
         mJoints[indexCableFound] = joint;
         mJointNames[indexCableFound] = name;
@@ -172,20 +175,20 @@ void gazebo::CdprGazeboPlugin::update() {
 
   if(mVelocityCommandReceived) {
     for(size_t i = 0; i < cWireCount; ++i) {
-      forceCalculators[i].setVelocityTarget(mVelocityCommand.axes[i]);
+      mForceCalculators[i].setVelocityTarget(mVelocityCommand.axes[i]);
     }
   }
   else { // nothing to do
   }
   if(mPositionCommandReceived) {
     for(size_t i = 0; i < cWireCount; ++i) {
-      forceCalculators[i].setPositionTarget(mPositionCommand.axes[i]);
+      mForceCalculators[i].setPositionTarget(mPositionCommand.axes[i]);
     }
   }
   else { // nothing to do
   }
   for(size_t i = 0; i < cWireCount; ++i) {
-    mJoints[i].SetForce(mForceCalculators[i].update());
+    mJoints[i]->SetForce(0, mForceCalculators[i].update());
   }
 
   // TODO develop logic for wire state publishing

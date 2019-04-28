@@ -16,6 +16,7 @@
 */
 
 #include "cdpr_gazebo/JointForceCalculator.h"
+#include <gazebo/physics/World.hh>
   
 gazebo::physics::JointForceCalculator::JointForceCalculator(ModelPtr aModel, JointPtr aJoint, gazebo::common::Pid const &aPositionPid, gazebo::common::Pid const &aVelocityPid) noexcept
 : mPhysicsModel(aModel)
@@ -25,7 +26,7 @@ gazebo::physics::JointForceCalculator::JointForceCalculator(ModelPtr aModel, Joi
 , mLastUpdateTime(mPhysicsModel->GetWorld()->SimTime()) {
 }
 
-gazebo::physics::JointForceCalculator& gazebo::physics::JointForceCalculator::operator=(JointForceCalculator const &aOther) noexcept;
+gazebo::physics::JointForceCalculator& gazebo::physics::JointForceCalculator::operator=(gazebo::physics::JointForceCalculator const &aOther) noexcept {
   if(this != &aOther) {
     mPhysicsModel = aOther.mPhysicsModel;
     mJoint = aOther.mJoint;
@@ -38,7 +39,7 @@ gazebo::physics::JointForceCalculator& gazebo::physics::JointForceCalculator::op
   }
 }
 
-double gazebo::physics::JointForceCalculator::update() {
+double gazebo::physics::JointForceCalculator::update() noexcept {
   gazebo::common::Time currTime = mPhysicsModel->GetWorld()->SimTime();
   gazebo::common::Time stepTime = currTime - mLastUpdateTime;
   mLastUpdateTime = currTime;
@@ -50,13 +51,13 @@ double gazebo::physics::JointForceCalculator::update() {
   // This happens when World::ResetTime is called.
   // TODO: fix this when World::ResetTime is improved
   if (stepTime > 0) {
-    if(mUpdateMode = UpdateMode::Force) {
+    if(mUpdateMode == UpdateMode::Force) {
       force = mForce;
     }
-    else if(mUpdateMode = UpdateMode::Velocity) {
+    else if(mUpdateMode == UpdateMode::Velocity) {
       force = mVelocityPid.update(mJoint->GetVelocity(0) - mVelocityTarget, stepTime);
     }
-    if(mUpdateMode = UpdateMode::Position) {
+    if(mUpdateMode == UpdateMode::Position) {
       force = mVelocityPid.update(mJoint->Position(0) - mPositionTarget, stepTime);
     }
   }

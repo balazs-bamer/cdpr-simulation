@@ -34,6 +34,9 @@ class Pid {
 private:
   class IirFilter1 {
   public:
+    IirFilter1() noexcept : mCoefficient(0.0) {
+    }
+
     IirFilter1(double const aCoefficient) noexcept : mCoefficient(aCoefficient) {
     }
 
@@ -74,7 +77,8 @@ public:
          double aCmdMax, double aCmdMin, double aPfilterCoefficient, double aDfilterCoefficient) noexcept;
 
   /// \brief Destructor
-  virtual ~Pid();
+  virtual ~Pid() {
+  }
 
   /// \brief Assignment operator
   /// \param[in] aOther a reference to a Pid to assign values from

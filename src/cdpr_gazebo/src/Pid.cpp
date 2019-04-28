@@ -39,7 +39,7 @@ gazebo::common::Pid::Pid(double aPgain, double aIgain, double aDgain, double aIm
   reset();
 }
   
-Pid& gazebo::common::Pid::operator=(const Pid &aOther) noexcept {
+gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &aOther) noexcept {
   if(this != &aOther) {
     mPgain = aOther.mPgain;
     mIgain = aOther.mIgain;
@@ -63,7 +63,7 @@ double gazebo::common::Pid::update(double aError, common::Time aDt) noexcept {
     return 0.0;
   }
   else {
-    mPerr = mPfilter(aError);
+    mPerr = mPfilter.update(aError);
     double pTerm = mPgain * mPerr;
 
     double prevIerr = mIerr;
@@ -81,7 +81,7 @@ double gazebo::common::Pid::update(double aError, common::Time aDt) noexcept {
     }
 
     if (aDt > common::Time(0, 0)) {
-      mDerr = mDfilter((aError - mErrLast) / aDt.Double());
+      mDerr = mDfilter.update((aError - mErrLast) / aDt.Double());
 //gzdbg << "mPerr " << mPerr << "  mPerrLast " << mPerrLast << "  diff " << (mPerr - mPerrLast) << "  dt " << aDt.Double() << "  mDerr " << mDerr << " ";
       mErrLast = aError;
     }
@@ -100,7 +100,7 @@ double gazebo::common::Pid::update(double aError, common::Time aDt) noexcept {
     else { // nothing to do
     }
 
-    if(mCdm != cmd) {
+    if(mCmd != cmd) {
       mIerr = prevIerr;
       mCmd += iTerm - mIgain * prevIerr;
     }

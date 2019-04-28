@@ -53,7 +53,8 @@ public:
   JointForceCalculator(ModelPtr aModel, JointPtr aJoint, gazebo::common::Pid const &aPositionPid, gazebo::common::Pid const &aVelocityPid) noexcept;
 
   /// \brief Destructor
-  virtual ~JointForceCalculator();
+  virtual ~JointForceCalculator() {
+  }
 
   JointForceCalculator& operator=(JointForceCalculator const &aOther) noexcept;
 

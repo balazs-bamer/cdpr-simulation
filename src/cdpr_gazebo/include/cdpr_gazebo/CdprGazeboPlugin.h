@@ -35,11 +35,15 @@ private:
   static constexpr char          cLaunchParamVelocityControllerD[]      = "/cdpr_gazebo_simulator/velocityControllerD";
   static constexpr char          cLaunchParamVelocityControllerMaxI[]   = "/cdpr_gazebo_simulator/velocityControllerMaxI";
   static constexpr char          cLaunchParamVelocityControllerMaxCmd[] = "/cdpr_gazebo_simulator/velocityControllerMaxCmd";
+  static constexpr char          cLaunchParamVelocityControllerPcoeff[] = "/cdpr_gazebo_simulator/velocityControllerPcoeff";
+  static constexpr char          cLaunchParamVelocityControllerDcoeff[] = "/cdpr_gazebo_simulator/velocityControllerDcoeff";
   static constexpr char          cLaunchParamPositionControllerP[]      = "/cdpr_gazebo_simulator/positionControllerP";
   static constexpr char          cLaunchParamPositionControllerI[]      = "/cdpr_gazebo_simulator/positionControllerI";
   static constexpr char          cLaunchParamPositionControllerD[]      = "/cdpr_gazebo_simulator/positionControllerD";
   static constexpr char          cLaunchParamPositionControllerMaxI[]   = "/cdpr_gazebo_simulator/positionControllerMaxI";
   static constexpr char          cLaunchParamPositionControllerMaxCmd[] = "/cdpr_gazebo_simulator/positionControllerMaxCmd";
+  static constexpr char          cLaunchParamPositionControllerPcoeff[] = "/cdpr_gazebo_simulator/positionControllerPcoeff";
+  static constexpr char          cLaunchParamPositionControllerDcoeff[] = "/cdpr_gazebo_simulator/posiitonControllerDcoeff";
 
   ros::NodeHandle                mRosNode;
   physics::ModelPtr              mPhysicsModel;
@@ -50,7 +54,7 @@ private:
 
   std::vector<std::string>       mJointNames;
   std::vector<physics::JointPtr> mJoints;
-  std::vector<physics::JointForceCalculators> mForceCalculators;
+  std::vector<physics::JointForceCalculator> mForceCalculators;
 
   ros::CallbackQueue             mVelocityCallbackQueue;
   ros::Subscriber                mVelocityCommandSubscriber;
