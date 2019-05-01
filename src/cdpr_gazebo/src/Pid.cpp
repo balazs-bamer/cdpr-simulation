@@ -41,13 +41,13 @@ gazebo::common::Pid::Pid(double aPgain, double aIgain, double aDgain, double aIm
   
 gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &aOther) noexcept {
   if(this != &aOther) {
-    mPgain = aOther.mPgain;
-    mIgain = aOther.mIgain;
-    mDgain = aOther.mDgain;
-    mImax = aOther.mImax;
-    mImin = aOther.mImin;
-    mCmdMax = aOther.mCmdMax;
-    mCmdMin = aOther.mCmdMin;
+    mPgain   = aOther.mPgain;
+    mIgain   = aOther.mIgain;
+    mDgain   = aOther.mDgain;
+    mImax    = aOther.mImax;
+    mImin    = aOther.mImin;
+    mCmdMax  = aOther.mCmdMax;
+    mCmdMin  = aOther.mCmdMin;
     mPfilter = aOther.mPfilter;
     mDfilter = aOther.mDfilter;
     reset();
@@ -56,6 +56,8 @@ gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &a
   }
   return *this;
 }
+
+extern bool theZeroest;
 
 /////////////////////////////////////////////////
 double gazebo::common::Pid::update(double aError, common::Time aDt) noexcept {
@@ -82,17 +84,20 @@ double gazebo::common::Pid::update(double aError, common::Time aDt) noexcept {
 
     if (aDt > common::Time(0, 0)) {
       mDerr = mDfilter.update((aError - mErrLast) / aDt.Double());
-//gzdbg << "mPerr " << mPerr << "  mPerrLast " << mPerrLast << "  diff " << (mPerr - mPerrLast) << "  dt " << aDt.Double() << "  mDerr " << mDerr << " ";
+if(theZeroest)
+gzdbg << "E " << aError << "  EL " << mErrLast << "  diff " << (aError - mErrLast) << "  dt " << aDt.Double() << "  mDerr " << mDerr << " ";
       mErrLast = aError;
     }
     else {
-//gzdbg << "dt was " << aDt.Double() << std::endl;
+if(theZeroest)
+gzdbg << "dt was " << aDt.Double() << std::endl;
     }
     double dTerm = mDgain * mDerr;
 
     double cmd = -pTerm - iTerm - dTerm;
 
-//gzdbg << "  P " << -pTerm << "  I " << -iTerm << "  D " << -dTerm << std::endl;
+if(theZeroest)
+gzdbg << "  P " << -pTerm << "  I " << -iTerm << "  D " << -dTerm << "  C " << cmd << std::endl;
 
     if (mCmdMax >= mCmdMin) {
       mCmd = ignition::math::clamp(cmd, mCmdMin, mCmdMax);

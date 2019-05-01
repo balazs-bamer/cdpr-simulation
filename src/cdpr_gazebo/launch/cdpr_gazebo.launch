@@ -27,12 +27,12 @@
    <param name="velocityControllerMaxI" value="10000.0" />
     <param name="velocityControllerMaxCmd" value="10000.0" /-->
 <!-- Tu=6.61 s at Ku=100, Ziegler-Nichols no overshoot, fails-->
-    <param name="velocityControllerP" value="20.0" />
-    <param name="velocityControllerI" value="6.051" />
-    <param name="velocityControllerD" value="44.066" />
+    <param name="velocityControllerP" value="100"/> <!--20.0"-->
+    <param name="velocityControllerI" value="0"/> <!--6.051 /-->
+    <param name="velocityControllerD" value="0"/> <!--"44.066" /-->
     <param name="velocityControllerMaxI" value="100.0" />
     <param name="velocityControllerMaxCmd" value="100.0" />
-    <param name="velocityControllerPcoeff" value="0.1" />
+    <param name="velocityControllerPcoeff" value="0.2" />
     <param name="velocityControllerDcoeff" value="0.5" />
 <!-- Tu=0.4 s at Ku=100, Ziegler-Nichols no overshoot with more agressive D-->
     <param name="positionControllerP" value="20.0" /> 

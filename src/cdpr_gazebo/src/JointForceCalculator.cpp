@@ -17,6 +17,8 @@
 
 #include "cdpr_gazebo/JointForceCalculator.h"
 #include <gazebo/physics/World.hh>
+
+
   
 gazebo::physics::JointForceCalculator::JointForceCalculator(ModelPtr aModel, JointPtr aJoint, gazebo::common::Pid const &aPositionPid, gazebo::common::Pid const &aVelocityPid) noexcept
 : mPhysicsModel(aModel)
@@ -28,16 +30,23 @@ gazebo::physics::JointForceCalculator::JointForceCalculator(ModelPtr aModel, Joi
 
 gazebo::physics::JointForceCalculator& gazebo::physics::JointForceCalculator::operator=(gazebo::physics::JointForceCalculator const &aOther) noexcept {
   if(this != &aOther) {
-    mPhysicsModel = aOther.mPhysicsModel;
-    mJoint = aOther.mJoint;
-    mPositionPid = aOther.mPositionPid;
-    mVelocityPid = aOther.mVelocityPid;
+    mPhysicsModel   = aOther.mPhysicsModel;
+    mJoint          = aOther.mJoint;
+    mPositionPid    = aOther.mPositionPid;
+    mVelocityPid    = aOther.mVelocityPid;
+    mUpdateMode     = aOther.mUpdateMode;
+    mForce          = aOther.mForce;
+    mPositionTarget = aOther.mPositionTarget;
+    mVelocityTarget = aOther.mVelocityTarget;
     mLastUpdateTime = mPhysicsModel->GetWorld()->SimTime();
     reset();
+gzdbg << " F = " << mForce << "  P = " << mPositionTarget << "  V = " << mVelocityTarget << std::endl;
   }
   else { // nothing to do
   }
 }
+
+extern bool theZeroest;
 
 double gazebo::physics::JointForceCalculator::update() noexcept {
   gazebo::common::Time currTime = mPhysicsModel->GetWorld()->SimTime();
@@ -55,10 +64,13 @@ double gazebo::physics::JointForceCalculator::update() noexcept {
       force = mForce;
     }
     else if(mUpdateMode == UpdateMode::Velocity) {
+if(theZeroest)
+gzdbg << "V " << mJoint->GetVelocity(0) << "  VT " << mVelocityTarget << "  ";
       force = mVelocityPid.update(mJoint->GetVelocity(0) - mVelocityTarget, stepTime);
     }
     if(mUpdateMode == UpdateMode::Position) {
-      force = mVelocityPid.update(mJoint->Position(0) - mPositionTarget, stepTime);
+      force = mPositionPid.update(mJoint->Position(0) - mPositionTarget, stepTime);
+//gzdbg << "position F = " << force << "  p = " << mJoint->Position(0) << "  pt = " << mPositionTarget << "  dt = " << stepTime << std::endl;
     }
   }
   else { // nothing to do
@@ -68,4 +80,25 @@ double gazebo::physics::JointForceCalculator::update() noexcept {
 }
 
 
+void gazebo::physics::JointForceCalculator::setPositionTarget(const double aTarget) noexcept {
+  mPositionTarget = aTarget;
+  if(mUpdateMode != UpdateMode::Position) {
+    mPositionPid.reset();
+  }
+  else { // nothing to do
+  }
+  mUpdateMode = UpdateMode::Position;
+}
+
+/// \brief Set the target velocity for the velocity PID controller.
+/// \param[in] _target Velocity target.
+void gazebo::physics::JointForceCalculator::setVelocityTarget(const double aTarget) noexcept {
+  mVelocityTarget = aTarget;
+  if(mUpdateMode != UpdateMode::Velocity) {
+    mVelocityPid.reset();
+  }
+  else { // nothing to do
+  }
+  mUpdateMode = UpdateMode::Velocity;
+}
 

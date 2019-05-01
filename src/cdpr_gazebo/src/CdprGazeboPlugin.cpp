@@ -51,7 +51,7 @@ void gazebo::CdprGazeboPlugin::Load(physics::ModelPtr aModel, sdf::ElementPtr) {
   mPreviousProcessingTime = 0.0;
   
   mRosNode.getParam(cLaunchParamVelocityEpsilon, mVelocityEpsilon);
-  gzdbg << "Velocity epsilon below which position is held fix =" << mVelocityEpsilon << std::endl;
+  gzdbg << "Velocity epsilon below which position is held fix = " << mVelocityEpsilon << std::endl;
 
   mUpdateEvent = event::Events::ConnectWorldUpdateBegin(boost::bind(&CdprGazeboPlugin::update, this));
 
@@ -169,6 +169,8 @@ void gazebo::CdprGazeboPlugin::initCommunication() {
   mPlatformStatePublisher = mRosNode.advertise<cdpr_gazebo::PlatformState>(cPlatformPoseTopic, cPublisherQueueSize);
 }
 
+bool theZeroest;
+
 void gazebo::CdprGazeboPlugin::update() {
   mVelocityCallbackQueue.callAvailable();
   mPositionCallbackQueue.callAvailable();
@@ -188,6 +190,7 @@ void gazebo::CdprGazeboPlugin::update() {
   else { // nothing to do
   }
   for(size_t i = 0; i < cWireCount; ++i) {
+theZeroest = i == 0;
     mJoints[i]->SetForce(0, mForceCalculators[i].update());
   }
 

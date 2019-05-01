@@ -76,25 +76,16 @@ public:
 
   /// \brief Set the target position for the position PID controller.
   /// \param[in] _target Position target.
-  /// \return False if the joint was not found.
-  bool setPositionTarget(const double aTarget) noexcept {
-    mPositionTarget = aTarget;
-    mUpdateMode = UpdateMode::Position;
-  }
+  void setPositionTarget(const double aTarget) noexcept;
 
   /// \brief Set the target velocity for the velocity PID controller.
   /// \param[in] _target Velocity target.
-  /// \return False if the joint was not found.
-  bool setVelocityTarget(const double aTarget) noexcept {
-    mVelocityTarget = aTarget;
-    mUpdateMode = UpdateMode::Velocity;
-  }
+  void setVelocityTarget(const double aTarget) noexcept;
 
   /// \brief Set the applied effort for the specified joint.
   /// This force will persist across time steps.
   /// \param[in] _force Force to apply.
-  /// \return False if the joint was not found.
-  bool setForce(const double aForce) noexcept {
+  void setForce(const double aForce) noexcept {
     mForce = aForce;
     mUpdateMode = UpdateMode::Force;
   }
