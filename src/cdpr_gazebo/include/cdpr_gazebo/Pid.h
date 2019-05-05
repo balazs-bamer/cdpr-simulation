@@ -18,6 +18,7 @@
 #ifndef _GAZEBO_Pid_HH_
 #define _GAZEBO_Pid_HH_
 
+#include "cdpr_gazebo/Filter.h"
 #include "gazebo/common/Time.hh"
 #include "gazebo/util/system.hh"
 
@@ -32,34 +33,38 @@ namespace gazebo::common {
 /// the state of a system and a user specified target state.
 class Pid {
 private:
-  class IirFilter1 {
+  class CascadeFilter {
   public:
-    IirFilter1() noexcept : mCoefficient(0.0) {
+    CascadeFilter() noexcept : CascadeFilter(0.0, 0.0, 0u) {
     }
 
-    IirFilter1(double const aCoefficient) noexcept : mCoefficient(aCoefficient) {
-    }
+    CascadeFilter(double const aRelCutoff, double const aQuality, size_t const aCascade) noexcept;
 
-    IirFilter1(IirFilter1 const &aOther) noexcept {
-      mCoefficient = aOther.mCoefficient;
-      reset();
+    CascadeFilter(CascadeFilter const &aOther) noexcept : CascadeFilter(aOther.mRelCutoff, aOther.mQuality, aOther.mCascade) {
     }
 
     void reset() noexcept {
-      mLastOutput = 0.0;
+      for(auto &filter : mFilters) {
+        filter.SetValue(0.0);
+      }
     }
 
-    double update(double const aInput) noexcept {
-      mLastOutput = mLastOutput * mCoefficient + aInput * (1.0 - mCoefficient);
-      return mLastOutput;
-    } 
+    double update(double const aInput) noexcept;
 
   private:
-    double mCoefficient;
-    double mLastOutput = 0.0;
+    double mRelCutoff;
+    double mQuality;
+    size_t mCascade;
+    std::vector<gazebo::math::BiQuad<double>> mFilters;
   };
 
 public:
+  struct FilterParameters {
+    double relCutoff;
+    double quality;
+    size_t cascade;
+  };
+
   /// \brief Constructor, zeros out Pid values when created and
   /// initialize Pid-gains and integral term limits:[mImax:mImin]-[I1:I2].
   ///
@@ -69,12 +74,9 @@ public:
   /// \param[in] aPgain  The proportional gain.
   /// \param[in] aIgain  The integral gain.
   /// \param[in] aDgain  The derivative gain.
-  /// \param[in] aImax The integral upper limit.
-  /// \param[in] aImin The integral lower limit.
-  /// \param[in] aCmdMax Output max value.
-  /// \param[in] aCmdMin Output min value.
-  Pid(double aPgain, double aIgain, double aDgain, double aImax, double aImin,
-         double aCmdMax, double aCmdMin, double aPfilterCoefficient, double aDfilterCoefficient) noexcept;
+  /// \param[in] aIlimit The integral limit.
+  /// \param[in] aCmdLimit Output limit.
+  Pid(double const aForwardGain, double const aPgain, double const aIgain, double const aDgain, double const aIlimit, double const aCmdLimit, FilterParameters const &aPfilter, FilterParameters const &aDfilter) noexcept;
 
   /// \brief Destructor
   virtual ~Pid() {
@@ -83,7 +85,7 @@ public:
   /// \brief Assignment operator
   /// \param[in] aOther a reference to a Pid to assign values from
   /// \return reference to this instance
-  Pid &operator=(const Pid &aOther) noexcept;
+  Pid &operator=(Pid const &aOther) noexcept;
 
   /// \brief reset the errors and command.
   void reset() noexcept {
@@ -93,13 +95,14 @@ public:
   }
 
   /// \brief update the Pid loop with nonuniform time step size.
-  /// \param[_in] aError  Error since last call (p_state - p_target).
+  /// \param[_in] aDesired Current desired value.
+  /// \param[_in] aActual Current actual value.
   /// \param[_in] aDt Change in time since last update call.
   /// Normally, this is called at every time step,
   /// The return value is an updated command to be passed
   /// to the object being controlled.
   /// \return the command value
-  double update(double aError, common::Time aDt) noexcept;
+  double update(double const aDesired, double const aActual, common::Time const aDt) noexcept;
 
 private:
   /// \brief Error at a previous step.
@@ -113,6 +116,8 @@ private:
 
   /// \brief Derivative error.
   double mDerr;
+
+  double mForwardGain;
 
   /// \brief Gain for proportional control.
   double mPgain;
@@ -139,10 +144,10 @@ private:
   double mCmdMin = 0.0;
 
   /// \brief First order IIR filter for P input
-  IirFilter1 mPfilter;
+  CascadeFilter mPfilter;
 
   /// \brief First order IIR filter for D input
-  IirFilter1 mDfilter;
+  CascadeFilter mDfilter;
 };
 
 }

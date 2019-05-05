@@ -66,10 +66,10 @@ double gazebo::physics::JointForceCalculator::update() noexcept {
     else if(mUpdateMode == UpdateMode::Velocity) {
 if(theZeroest)
 gzdbg << "V " << mJoint->GetVelocity(0) << "  VT " << mVelocityTarget << "  ";
-      force = mVelocityPid.update(mJoint->GetVelocity(0) - mVelocityTarget, stepTime);
+      force = mVelocityPid.update(mVelocityTarget, mJoint->GetVelocity(0), stepTime);
     }
     if(mUpdateMode == UpdateMode::Position) {
-      force = mPositionPid.update(mJoint->Position(0) - mPositionTarget, stepTime);
+      force = mPositionPid.update(mPositionTarget, mJoint->Position(0), stepTime);
 //gzdbg << "position F = " << force << "  p = " << mJoint->Position(0) << "  pt = " << mPositionTarget << "  dt = " << stepTime << std::endl;
     }
   }

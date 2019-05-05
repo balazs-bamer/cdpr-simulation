@@ -15,7 +15,6 @@
  *
 */
 
-#include <math.h>
 #include <cmath>
 #include <stdio.h>
 
@@ -23,24 +22,43 @@
 #include "cdpr_gazebo/Pid.h"
 #include <gazebo/gazebo.hh>
 
+gazebo::common::Pid::CascadeFilter::CascadeFilter(double const aRelCutoff, double const aQuality, size_t const aCascade) noexcept
+: mRelCutoff(aRelCutoff)
+, mQuality(aQuality)
+, mCascade(aCascade) {
+  mFilters.resize(aCascade);
+  for(auto &filter : mFilters) {
+    filter.SetValue(0.0);
+    filter.SetFc(aRelCutoff, 1.0, aQuality);
+  }
+}
+
+double gazebo::common::Pid::CascadeFilter::update(double const aInput) noexcept {
+  double output = aInput;
+  for(auto &filter : mFilters) {
+    output = filter.process(output);
+  }
+  return output;
+}
 
 /////////////////////////////////////////////////
-gazebo::common::Pid::Pid(double aPgain, double aIgain, double aDgain, double aImax, double aImin,
-         double aCmdMax, double aCmdMin, double aPfilterCoefficient, double aDfilterCoefficient) noexcept
-  : mPgain(aPgain)
-  , mIgain(aIgain)
-  , mDgain(aDgain)
-  , mImax(aImax)
-  , mImin(aImin)
-  , mCmdMax(aCmdMax)
-  , mCmdMin(aCmdMin)
-  , mPfilter(aPfilterCoefficient)
-  , mDfilter(aDfilterCoefficient) {
+gazebo::common::Pid::Pid(double const aForwardGain, double const aPgain, double const aIgain, double const aDgain, double const aIlimit, double const aCmdLimit, FilterParameters const &aPfilter, FilterParameters const &aDfilter) noexcept
+: mForwardGain(aForwardGain)
+, mPgain(aPgain)
+, mIgain(aIgain)
+, mDgain(aDgain)
+, mImax(abs(aIlimit))
+, mImin(-abs(aIlimit))
+, mCmdMax(abs(aCmdLimit))
+, mCmdMin(-abs(aCmdLimit))
+, mPfilter(aPfilter.relCutoff, aPfilter.quality, aPfilter.cascade)
+, mDfilter(aDfilter.relCutoff, aDfilter.quality, aDfilter.cascade) {
   reset();
 }
   
 gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &aOther) noexcept {
   if(this != &aOther) {
+    mForwardGain = aOther.mForwardGain;
     mPgain   = aOther.mPgain;
     mIgain   = aOther.mIgain;
     mDgain   = aOther.mDgain;
@@ -57,19 +75,24 @@ gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &a
   return *this;
 }
 
+#include <sensor_msgs/Joy.h>
 extern bool theZeroest;
+extern sensor_msgs::Joy pidMsg;
 
 /////////////////////////////////////////////////
-double gazebo::common::Pid::update(double aError, common::Time aDt) noexcept {
-  if (aDt == common::Time(0, 0) || ignition::math::isnan(aError) ||  std::isinf(aError)) {
+double gazebo::common::Pid::update(double const aDesired, double const aActual, common::Time const aDt) noexcept {
+  if (aDt == common::Time(0, 0)) {
     return 0.0;
   }
   else {
-    mPerr = mPfilter.update(aError);
+    double fTerm = mForwardGain * aDesired;
+    double error = aDesired - aActual;
+
+    mPerr = mPfilter.update(error);
     double pTerm = mPgain * mPerr;
 
     double prevIerr = mIerr;
-    mIerr = mIerr + aDt.Double() * aError;
+    mIerr = mIerr + aDt.Double() * error;
     double iTerm = mIgain * mIerr;
     if (iTerm > mImax) {
       iTerm = mImax;
@@ -83,10 +106,13 @@ double gazebo::common::Pid::update(double aError, common::Time aDt) noexcept {
     }
 
     if (aDt > common::Time(0, 0)) {
-      mDerr = mDfilter.update((aError - mErrLast) / aDt.Double());
-if(theZeroest)
-gzdbg << "E " << aError << "  EL " << mErrLast << "  diff " << (aError - mErrLast) << "  dt " << aDt.Double() << "  mDerr " << mDerr << " ";
-      mErrLast = aError;
+      mDerr = mDfilter.update((error - mErrLast) / aDt.Double());
+if(theZeroest) {
+pidMsg.axes[0] = (error - mErrLast) / aDt.Double();
+pidMsg.axes[1] = mDerr;
+gzdbg << "E " << error << "  EL " << mErrLast << "  diff " << (error - mErrLast) << "  dt " << aDt.Double() << "  mDerr " << mDerr << " ";
+}
+      mErrLast = error;
     }
     else {
 if(theZeroest)
@@ -94,12 +120,12 @@ gzdbg << "dt was " << aDt.Double() << std::endl;
     }
     double dTerm = mDgain * mDerr;
 
-    double cmd = -pTerm - iTerm - dTerm;
+    double cmd = fTerm + pTerm + iTerm + dTerm;
 
 if(theZeroest)
-gzdbg << "  P " << -pTerm << "  I " << -iTerm << "  D " << -dTerm << "  C " << cmd << std::endl;
+gzdbg << "  F " << fTerm << "  P " << pTerm << "  I " << iTerm << "  D " << dTerm << "  C " << cmd << std::endl;
 
-    if (mCmdMax >= mCmdMin) {
+    if (mCmdMax > mCmdMin) {
       mCmd = ignition::math::clamp(cmd, mCmdMin, mCmdMax);
     }
     else { // nothing to do

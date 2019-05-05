@@ -12,6 +12,7 @@
 
 #include <string>
 
+constexpr char gazebo::CdprGazeboPlugin::cPidTopic[];
 
 constexpr char gazebo::CdprGazeboPlugin::cVelocityTopic[];
 constexpr char gazebo::CdprGazeboPlugin::cPositionTopic[];
@@ -23,20 +24,23 @@ constexpr char gazebo::CdprGazeboPlugin::cSdfNameFrame[];
 constexpr char gazebo::CdprGazeboPlugin::cSdfNamePlatform[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPublishPeriod[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityEpsilon[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerForward[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerP[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerD[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerMaxI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerMaxCmd[];
-constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerPcoeff[];
-constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDcoeff[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerPcutoff[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerPquality[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerPcascade[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDcutoff[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDquality[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDcascade[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerP[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerD[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerMaxI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerMaxCmd[];
-constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerPcoeff[];
-constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerDcoeff[];
 
 void gazebo::CdprGazeboPlugin::Load(physics::ModelPtr aModel, sdf::ElementPtr) {
   mPhysicsModel = aModel;
@@ -91,27 +95,35 @@ void gazebo::CdprGazeboPlugin::obtainLinks() {
 }
   
 void gazebo::CdprGazeboPlugin::initJointsAndController() {
-  double pidP, pidI, pidD, pidMaxI, pidMaxCmd, pCoeff, dCoeff;
+  double pidForward, pidP, pidI, pidD, pidMaxI, pidMaxCmd, pCoeff, dCoeff;
+  common::Pid::FilterParameters filterP, filterD;
+  int tmp;
 
+  mRosNode.getParam(cLaunchParamVelocityControllerForward, pidForward);
   mRosNode.getParam(cLaunchParamVelocityControllerP, pidP);
   mRosNode.getParam(cLaunchParamVelocityControllerI, pidI);
   mRosNode.getParam(cLaunchParamVelocityControllerD, pidD);
   mRosNode.getParam(cLaunchParamVelocityControllerMaxI, pidMaxI);
   mRosNode.getParam(cLaunchParamVelocityControllerMaxCmd, pidMaxCmd);
-  mRosNode.getParam(cLaunchParamVelocityControllerPcoeff, pCoeff);
-  mRosNode.getParam(cLaunchParamVelocityControllerDcoeff, dCoeff);
-  auto velocityPidController = common::Pid(pidP, pidI, pidD, pidMaxI, -pidMaxI, pidMaxCmd, -pidMaxCmd, pCoeff, dCoeff);
+  mRosNode.getParam(cLaunchParamVelocityControllerPcutoff, filterP.relCutoff);
+  mRosNode.getParam(cLaunchParamVelocityControllerPquality, filterP.quality);
+  mRosNode.getParam(cLaunchParamVelocityControllerPcascade, tmp);
+  filterP.cascade = tmp;
+  mRosNode.getParam(cLaunchParamVelocityControllerDcutoff, filterD.relCutoff);
+  mRosNode.getParam(cLaunchParamVelocityControllerDquality, filterD.quality);
+  mRosNode.getParam(cLaunchParamVelocityControllerDcascade, tmp);
+  filterD.cascade = tmp;
+  auto velocityPidController = common::Pid(pidForward, pidP, pidI, pidD, pidMaxI, pidMaxCmd, filterP, filterD);
 
-  gzdbg << "Velocity controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd << "  pCoeff = " << pCoeff << "  dCoeff = " << dCoeff << std::endl;
+  gzdbg << "Velocity controller: forward = " << pidForward << "  P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd << std::endl;
   mRosNode.getParam(cLaunchParamPositionControllerP, pidP);
   mRosNode.getParam(cLaunchParamPositionControllerI, pidI);
   mRosNode.getParam(cLaunchParamPositionControllerD, pidD);
   mRosNode.getParam(cLaunchParamPositionControllerMaxI, pidMaxI);
   mRosNode.getParam(cLaunchParamPositionControllerMaxCmd, pidMaxCmd);
-  mRosNode.getParam(cLaunchParamPositionControllerPcoeff, pCoeff);
-  mRosNode.getParam(cLaunchParamPositionControllerDcoeff, dCoeff);
-  auto positionPidController = common::Pid(pidP, pidI, pidD, pidMaxI, -pidMaxI, pidMaxCmd, -pidMaxCmd, pCoeff, dCoeff);
-  gzdbg << "Position controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd << "  pCoeff = " << pCoeff << "  dCoeff = " << dCoeff << std::endl;
+  filterP.cascade = filterD.cascade = 0u;
+  auto positionPidController = common::Pid(0.0, pidP, pidI, pidD, pidMaxI, pidMaxCmd, filterP, filterD);
+  gzdbg << "Position controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd << std::endl;
 
   mJoints.resize(cWireCount);
   mJointNames.resize(cWireCount);
@@ -146,6 +158,8 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
   else { // nothing to do
   }
 }
+
+sensor_msgs::Joy pidMsg;
   
 void gazebo::CdprGazeboPlugin::initCommunication() {
   ros::SubscribeOptions subscribeOptions = ros::SubscribeOptions::create<sensor_msgs::Joy>(cVelocityTopic, cSubscriberQueueSize,
@@ -164,6 +178,8 @@ void gazebo::CdprGazeboPlugin::initCommunication() {
   mJointStates.position.resize(cWireCount);
   mJointStates.velocity.resize(cWireCount);
   mJointStates.effort.resize(cWireCount);
+mPidPublisher = mRosNode.advertise<sensor_msgs::Joy>(cPidTopic, cPublisherQueueSize);
+pidMsg.axes.resize(4);
 
   mWireStatePublisher = mRosNode.advertise<cdpr_gazebo::WireStates>(cWireStatesTopic, cPublisherQueueSize);
   mPlatformStatePublisher = mRosNode.advertise<cdpr_gazebo::PlatformState>(cPlatformPoseTopic, cPublisherQueueSize);
@@ -198,6 +214,8 @@ theZeroest = i == 0;
   // this should definitely emit marker events even if they are entirely skipped during a simulation step
 
   auto now = ros::Time::now();
+pidMsg.header.stamp = now;
+mPidPublisher.publish(pidMsg);
   double nowDouble = now.toSec();
   if((nowDouble - mPreviousProcessingTime) > mPublishPeriod) {
     mPreviousProcessingTime = nowDouble;

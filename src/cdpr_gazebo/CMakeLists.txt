@@ -138,6 +138,7 @@ add_library(cdpr_gazebo_plugin
   src/JointForceCalculator.cpp
   src/CdprGazeboPlugin.cpp
   include/cdpr_gazebo/Pid.h
+  include/cdpr_gazebo/Filter.h
   include/cdpr_gazebo/JointForceCalculator.h
   include/cdpr_gazebo/CdprGazeboPlugin.h)
 target_link_libraries(cdpr_gazebo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})

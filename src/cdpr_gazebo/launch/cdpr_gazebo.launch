@@ -27,21 +27,24 @@
    <param name="velocityControllerMaxI" value="10000.0" />
     <param name="velocityControllerMaxCmd" value="10000.0" /-->
 <!-- Tu=6.61 s at Ku=100, Ziegler-Nichols no overshoot, fails-->
-    <param name="velocityControllerP" value="100"/> <!--20.0"-->
+    <param name="velocityControllerForward" value="100"/>
+    <param name="velocityControllerP" value="300"/> <!--20.0"-->
     <param name="velocityControllerI" value="0"/> <!--6.051 /-->
     <param name="velocityControllerD" value="0"/> <!--"44.066" /-->
     <param name="velocityControllerMaxI" value="100.0" />
     <param name="velocityControllerMaxCmd" value="100.0" />
-    <param name="velocityControllerPcoeff" value="0.2" />
-    <param name="velocityControllerDcoeff" value="0.5" />
+    <param name="velocityControllerPcutoff" value="0.1" /> <!-- relative to fs -->
+    <param name="velocityControllerPquality" value="0.707" /> <!-- Butterworth -->
+    <param name="velocityControllerPcascade" value="0" />
+    <param name="velocityControllerDcutoff" value="0.1" />
+    <param name="velocityControllerDquality" value="0.707" />
+    <param name="velocityControllerDcascade" value="0" />
 <!-- Tu=0.4 s at Ku=100, Ziegler-Nichols no overshoot with more agressive D-->
     <param name="positionControllerP" value="20.0" /> 
     <param name="positionControllerI" value="100" />
     <param name="positionControllerD" value="6" />
     <param name="positionControllerMaxI" value="100.0" />
     <param name="positionControllerMaxCmd" value="100.0" />
-    <param name="positionControllerPcoeff" value="0.1" />
-    <param name="positionControllerDcoeff" value="0.2" />
 <!-- Tu=0.4 s at Ku=100, Ziegler-Nichols no overshoot>
     <param name="positionControllerP" value="20.0" /> 
     <param name="positionControllerI" value="100" />
