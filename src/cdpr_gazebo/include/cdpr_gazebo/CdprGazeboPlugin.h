@@ -35,6 +35,7 @@ static constexpr char          cPidTopic[]                       = "pid";
   static constexpr char          cLaunchParamVelocityControllerP[]        = "/cdpr_gazebo_simulator/velocityControllerP";
   static constexpr char          cLaunchParamVelocityControllerI[]        = "/cdpr_gazebo_simulator/velocityControllerI";
   static constexpr char          cLaunchParamVelocityControllerD[]        = "/cdpr_gazebo_simulator/velocityControllerD";
+  static constexpr char          cLaunchParamVelocityControllerDbuffer[]  = "/cdpr_gazebo_simulator/velocityControllerDbuffer";
   static constexpr char          cLaunchParamVelocityControllerMaxI[]     = "/cdpr_gazebo_simulator/velocityControllerMaxI";
   static constexpr char          cLaunchParamVelocityControllerMaxCmd[]   = "/cdpr_gazebo_simulator/velocityControllerMaxCmd";
   static constexpr char          cLaunchParamVelocityControllerPcutoff[]  = "/cdpr_gazebo_simulator/velocityControllerPcutoff";
@@ -46,6 +47,7 @@ static constexpr char          cPidTopic[]                       = "pid";
   static constexpr char          cLaunchParamPositionControllerP[]        = "/cdpr_gazebo_simulator/positionControllerP";
   static constexpr char          cLaunchParamPositionControllerI[]        = "/cdpr_gazebo_simulator/positionControllerI";
   static constexpr char          cLaunchParamPositionControllerD[]        = "/cdpr_gazebo_simulator/positionControllerD";
+  static constexpr char          cLaunchParamPositionControllerDbuffer[]  = "/cdpr_gazebo_simulator/positionControllerDbuffer";
   static constexpr char          cLaunchParamPositionControllerMaxI[]     = "/cdpr_gazebo_simulator/positionControllerMaxI";
   static constexpr char          cLaunchParamPositionControllerMaxCmd[]   = "/cdpr_gazebo_simulator/positionControllerMaxCmd";
 

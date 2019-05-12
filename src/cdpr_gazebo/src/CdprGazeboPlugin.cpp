@@ -28,6 +28,7 @@ constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerForward[]
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerP[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerD[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDbuffer[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerMaxI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerMaxCmd[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerPcutoff[];
@@ -39,6 +40,7 @@ constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDcascade[
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerP[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerD[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerDbuffer[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerMaxI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerMaxCmd[];
 
@@ -95,35 +97,39 @@ void gazebo::CdprGazeboPlugin::obtainLinks() {
 }
   
 void gazebo::CdprGazeboPlugin::initJointsAndController() {
-  double pidForward, pidP, pidI, pidD, pidMaxI, pidMaxCmd, pCoeff, dCoeff;
-  common::Pid::FilterParameters filterP, filterD;
+  common::Pid::PidParameters pidParameters;
   int tmp;
 
-  mRosNode.getParam(cLaunchParamVelocityControllerForward, pidForward);
-  mRosNode.getParam(cLaunchParamVelocityControllerP, pidP);
-  mRosNode.getParam(cLaunchParamVelocityControllerI, pidI);
-  mRosNode.getParam(cLaunchParamVelocityControllerD, pidD);
-  mRosNode.getParam(cLaunchParamVelocityControllerMaxI, pidMaxI);
-  mRosNode.getParam(cLaunchParamVelocityControllerMaxCmd, pidMaxCmd);
-  mRosNode.getParam(cLaunchParamVelocityControllerPcutoff, filterP.relCutoff);
-  mRosNode.getParam(cLaunchParamVelocityControllerPquality, filterP.quality);
+  mRosNode.getParam(cLaunchParamVelocityControllerForward, pidParameters.forwardGain);
+  mRosNode.getParam(cLaunchParamVelocityControllerP, pidParameters.pGain);
+  mRosNode.getParam(cLaunchParamVelocityControllerI, pidParameters.iGain);
+  mRosNode.getParam(cLaunchParamVelocityControllerD, pidParameters.dGain);
+  mRosNode.getParam(cLaunchParamVelocityControllerDbuffer, tmp);
+  pidParameters.dBufferLength = tmp;
+  mRosNode.getParam(cLaunchParamVelocityControllerMaxI, pidParameters.iLimit);
+  mRosNode.getParam(cLaunchParamVelocityControllerMaxCmd, pidParameters.cmdLimit);
+  mRosNode.getParam(cLaunchParamVelocityControllerPcutoff, pidParameters.pFilter.relCutoff);
+  mRosNode.getParam(cLaunchParamVelocityControllerPquality, pidParameters.pFilter.quality);
   mRosNode.getParam(cLaunchParamVelocityControllerPcascade, tmp);
-  filterP.cascade = tmp;
-  mRosNode.getParam(cLaunchParamVelocityControllerDcutoff, filterD.relCutoff);
-  mRosNode.getParam(cLaunchParamVelocityControllerDquality, filterD.quality);
+  pidParameters.pFilter.cascade = tmp;
+  mRosNode.getParam(cLaunchParamVelocityControllerDcutoff, pidParameters.dFilter.relCutoff);
+  mRosNode.getParam(cLaunchParamVelocityControllerDquality, pidParameters.dFilter.quality);
   mRosNode.getParam(cLaunchParamVelocityControllerDcascade, tmp);
-  filterD.cascade = tmp;
-  auto velocityPidController = common::Pid(pidForward, pidP, pidI, pidD, pidMaxI, pidMaxCmd, filterP, filterD);
+  pidParameters.dFilter.cascade = tmp;
+  auto velocityPidController = common::Pid(pidParameters);
 
-  gzdbg << "Velocity controller: forward = " << pidForward << "  P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd << std::endl;
-  mRosNode.getParam(cLaunchParamPositionControllerP, pidP);
-  mRosNode.getParam(cLaunchParamPositionControllerI, pidI);
-  mRosNode.getParam(cLaunchParamPositionControllerD, pidD);
-  mRosNode.getParam(cLaunchParamPositionControllerMaxI, pidMaxI);
-  mRosNode.getParam(cLaunchParamPositionControllerMaxCmd, pidMaxCmd);
-  filterP.cascade = filterD.cascade = 0u;
-  auto positionPidController = common::Pid(0.0, pidP, pidI, pidD, pidMaxI, pidMaxCmd, filterP, filterD);
-  gzdbg << "Position controller: P = " << pidP << "  I = " << pidI << "  D = " << pidD << "  maxI = " << pidMaxI << "  maxCmd = " << pidMaxCmd << std::endl;
+  gzdbg << "Velocity controller: forward = " << pidParameters.forwardGain << "  P = " << pidParameters.pGain << "  I = " << pidParameters.iGain << "  D = " << pidParameters.dGain << "  maxI = " << pidParameters.iLimit << "  maxCmd = " << pidParameters.cmdLimit << std::endl;
+  pidParameters.forwardGain = 0.0;
+  mRosNode.getParam(cLaunchParamPositionControllerP, pidParameters.pGain);
+  mRosNode.getParam(cLaunchParamPositionControllerI, pidParameters.iGain);
+  mRosNode.getParam(cLaunchParamPositionControllerD, pidParameters.dGain);
+  mRosNode.getParam(cLaunchParamPositionControllerDbuffer, tmp);
+  pidParameters.dBufferLength = tmp;
+  mRosNode.getParam(cLaunchParamPositionControllerMaxI, pidParameters.iLimit);
+  mRosNode.getParam(cLaunchParamPositionControllerMaxCmd, pidParameters.cmdLimit);
+  pidParameters.pFilter.cascade = pidParameters.dFilter.cascade = 0u;
+  auto positionPidController = common::Pid(pidParameters);
+  gzdbg << "Position controller: P = " << pidParameters.pGain << "  I = " << pidParameters.iGain << "  D = " << pidParameters.dGain << "  maxI = " << pidParameters.iLimit << "  maxCmd = " << pidParameters.cmdLimit << std::endl;
 
   mJoints.resize(cWireCount);
   mJointNames.resize(cWireCount);

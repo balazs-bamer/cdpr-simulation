@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <stdio.h>
+#include <algorithm>
 
 #include <ignition/math/Helpers.hh>
 #include "cdpr_gazebo/Pid.h"
@@ -42,17 +43,18 @@ double gazebo::common::Pid::CascadeFilter::update(double const aInput) noexcept 
 }
 
 /////////////////////////////////////////////////
-gazebo::common::Pid::Pid(double const aForwardGain, double const aPgain, double const aIgain, double const aDgain, double const aIlimit, double const aCmdLimit, FilterParameters const &aPfilter, FilterParameters const &aDfilter) noexcept
-: mForwardGain(aForwardGain)
-, mPgain(aPgain)
-, mIgain(aIgain)
-, mDgain(aDgain)
-, mImax(abs(aIlimit))
-, mImin(-abs(aIlimit))
-, mCmdMax(abs(aCmdLimit))
-, mCmdMin(-abs(aCmdLimit))
-, mPfilter(aPfilter.relCutoff, aPfilter.quality, aPfilter.cascade)
-, mDfilter(aDfilter.relCutoff, aDfilter.quality, aDfilter.cascade) {
+gazebo::common::Pid::Pid(PidParameters const &aPidParams) noexcept
+: mForwardGain(aPidParams.forwardGain)
+, mPgain(aPidParams.pGain)
+, mIgain(aPidParams.iGain)
+, mDgain(aPidParams.dGain)
+, mDbufferLength(aPidParams.dBufferLength)
+, mImax(abs(aPidParams.iLimit))
+, mImin(-abs(aPidParams.iLimit))
+, mCmdMax(abs(aPidParams.cmdLimit))
+, mCmdMin(-abs(aPidParams.cmdLimit))
+, mPfilter(aPidParams.pFilter.relCutoff, aPidParams.pFilter.quality, aPidParams.pFilter.cascade)
+, mDfilter(aPidParams.dFilter.relCutoff, aPidParams.dFilter.quality, aPidParams.dFilter.cascade) {
   reset();
 }
   
@@ -62,6 +64,7 @@ gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &a
     mPgain   = aOther.mPgain;
     mIgain   = aOther.mIgain;
     mDgain   = aOther.mDgain;
+    mDbufferLength = aOther.mDbufferLength;
     mImax    = aOther.mImax;
     mImin    = aOther.mImin;
     mCmdMax  = aOther.mCmdMax;
@@ -73,6 +76,15 @@ gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &a
   else { // nothing to do
   }
   return *this;
+}
+  
+void gazebo::common::Pid::reset() noexcept {
+  mErrPrev1 = mErrPrev2 = mPerr = mIerr = mDerr = mCmd = 0.0;
+  mPfilter.reset();
+  mDfilter.reset();
+  mDbuffer.resize(mDbufferLength);
+  std::fill(mDbuffer.begin(), mDbuffer.end(), 0.0);
+  mDbufferIndex = 0u;
 }
 
 #include <sensor_msgs/Joy.h>
@@ -106,13 +118,13 @@ double gazebo::common::Pid::update(double const aDesired, double const aActual, 
     }
 
     if (aDt > common::Time(0, 0)) {
-      mDerr = mDfilter.update((error - mErrLast) / aDt.Double());
+      double derived = derive(error, aDt.Double());
+      mDerr = mDfilter.update(derived);
 if(theZeroest) {
-pidMsg.axes[0] = (error - mErrLast) / aDt.Double();
+pidMsg.axes[0] = derived;
 pidMsg.axes[1] = mDerr;
-gzdbg << "E " << error << "  EL " << mErrLast << "  diff " << (error - mErrLast) << "  dt " << aDt.Double() << "  mDerr " << mDerr << " ";
+gzdbg << "E " << error << "  diff " << (3.0 * error - 4.0 * mErrPrev1 + mErrPrev2) << "  mDerr " << mDerr << " ";
 }
-      mErrLast = error;
     }
     else {
 if(theZeroest)
@@ -142,4 +154,19 @@ gzdbg << "  F " << fTerm << "  P " << pTerm << "  I " << iTerm << "  D " << dTer
   return mCmd;
 }
 
-
+double gazebo::common::Pid::derive(double const aValue, double const aDt) noexcept {
+  double period = aDt * mDbufferLength;
+  double sumSimple = (mDbuffer[mDbufferIndex] + aValue) / 2.0;
+  double sumComplicated = (mDbuffer[mDbufferIndex] * (-period) + aValue * 2.0 * period) / 2.0;
+  for(size_t i = 0; i < mDbufferLength; ++i) {
+    if(i != mDbufferIndex) {
+      sumSimple += mDbuffer[i];
+      sumComplicated += mDbuffer[i] * period * (2.0 - 3.0 * static_cast<double>((mDbufferLength - i)) / mDbufferLength);
+    }
+    else { // nothing to do
+    }
+  }
+  mDbuffer[mDbufferIndex] = aValue;
+  mDbufferIndex = (mDbufferIndex + 1u) % mDbufferLength;
+  return 2.0 / (period * period) * (2.0 / period * sumComplicated - sumSimple);
+}

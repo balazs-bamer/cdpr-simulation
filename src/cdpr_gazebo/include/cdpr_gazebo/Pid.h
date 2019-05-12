@@ -65,6 +65,18 @@ public:
     size_t cascade;
   };
 
+  struct PidParameters {
+    double forwardGain;
+    double pGain;
+    double iGain;
+    double dGain;
+    size_t dBufferLength;
+    double iLimit;
+    double cmdLimit;
+    FilterParameters pFilter;
+    FilterParameters dFilter;
+  };
+
   /// \brief Constructor, zeros out Pid values when created and
   /// initialize Pid-gains and integral term limits:[mImax:mImin]-[I1:I2].
   ///
@@ -76,7 +88,7 @@ public:
   /// \param[in] aDgain  The derivative gain.
   /// \param[in] aIlimit The integral limit.
   /// \param[in] aCmdLimit Output limit.
-  Pid(double const aForwardGain, double const aPgain, double const aIgain, double const aDgain, double const aIlimit, double const aCmdLimit, FilterParameters const &aPfilter, FilterParameters const &aDfilter) noexcept;
+  Pid(PidParameters const &aParams) noexcept;
 
   /// \brief Destructor
   virtual ~Pid() {
@@ -88,11 +100,7 @@ public:
   Pid &operator=(Pid const &aOther) noexcept;
 
   /// \brief reset the errors and command.
-  void reset() noexcept {
-    mErrLast = mPerr = mIerr = mDerr = mCmd = 0.0;
-    mPfilter.reset();
-    mDfilter.reset();
-  }
+  void reset() noexcept;
 
   /// \brief update the Pid loop with nonuniform time step size.
   /// \param[_in] aDesired Current desired value.
@@ -104,9 +112,11 @@ public:
   /// \return the command value
   double update(double const aDesired, double const aActual, common::Time const aDt) noexcept;
 
+  double derive(double const aValue, double const aDt) noexcept;
+
 private:
   /// \brief Error at a previous step.
-  double mErrLast;
+  double mErrPrev1, mErrPrev2;
 
   /// \brief Current error.
   double mPerr;
@@ -127,6 +137,7 @@ private:
 
   /// \brief Gain for derivative control.
   double mDgain;
+  size_t mDbufferLength;
 
   /// \brief Maximum clamping value for integral term.
   double mImax;
@@ -148,6 +159,9 @@ private:
 
   /// \brief First order IIR filter for D input
   CascadeFilter mDfilter;
+
+  std::vector<double> mDbuffer;
+  size_t mDbufferIndex;
 };
 
 }
