@@ -28,6 +28,7 @@ constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerForward[]
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerP[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerD[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDdegree[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDbuffer[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerMaxI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerMaxCmd[];
@@ -40,6 +41,7 @@ constexpr char gazebo::CdprGazeboPlugin::cLaunchParamVelocityControllerDcascade[
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerP[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerD[];
+constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerDdegree[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerDbuffer[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerMaxI[];
 constexpr char gazebo::CdprGazeboPlugin::cLaunchParamPositionControllerMaxCmd[];
@@ -104,6 +106,8 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
   mRosNode.getParam(cLaunchParamVelocityControllerP, pidParameters.pGain);
   mRosNode.getParam(cLaunchParamVelocityControllerI, pidParameters.iGain);
   mRosNode.getParam(cLaunchParamVelocityControllerD, pidParameters.dGain);
+  mRosNode.getParam(cLaunchParamVelocityControllerDdegree, tmp);
+  pidParameters.dDegree = tmp;
   mRosNode.getParam(cLaunchParamVelocityControllerDbuffer, tmp);
   pidParameters.dBufferLength = tmp;
   mRosNode.getParam(cLaunchParamVelocityControllerMaxI, pidParameters.iLimit);
@@ -123,6 +127,8 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
   mRosNode.getParam(cLaunchParamPositionControllerP, pidParameters.pGain);
   mRosNode.getParam(cLaunchParamPositionControllerI, pidParameters.iGain);
   mRosNode.getParam(cLaunchParamPositionControllerD, pidParameters.dGain);
+  mRosNode.getParam(cLaunchParamPositionControllerDdegree, tmp);
+  pidParameters.dDegree = tmp;
   mRosNode.getParam(cLaunchParamPositionControllerDbuffer, tmp);
   pidParameters.dBufferLength = tmp;
   mRosNode.getParam(cLaunchParamPositionControllerMaxI, pidParameters.iLimit);

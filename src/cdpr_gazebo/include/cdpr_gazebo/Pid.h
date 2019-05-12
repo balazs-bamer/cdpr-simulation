@@ -18,6 +18,7 @@
 #ifndef _GAZEBO_Pid_HH_
 #define _GAZEBO_Pid_HH_
 
+#include <libalglib/interpolation.h>
 #include "cdpr_gazebo/Filter.h"
 #include "gazebo/common/Time.hh"
 #include "gazebo/util/system.hh"
@@ -70,6 +71,7 @@ public:
     double pGain;
     double iGain;
     double dGain;
+    size_t dDegree;
     size_t dBufferLength;
     double iLimit;
     double cmdLimit;
@@ -110,13 +112,12 @@ public:
   /// The return value is an updated command to be passed
   /// to the object being controlled.
   /// \return the command value
-  double update(double const aDesired, double const aActual, common::Time const aDt) noexcept;
+  double update(double const aDesired, double const aActual, double const aDt);
 
-  double derive(double const aValue, double const aDt) noexcept;
+  double derive(double const aValue, double const aNow);
 
 private:
-  /// \brief Error at a previous step.
-  double mErrPrev1, mErrPrev2;
+  double mLastTime;
 
   /// \brief Current error.
   double mPerr;
@@ -137,6 +138,7 @@ private:
 
   /// \brief Gain for derivative control.
   double mDgain;
+  size_t mDpolynomialDegree;
   size_t mDbufferLength;
 
   /// \brief Maximum clamping value for integral term.
@@ -160,8 +162,10 @@ private:
   /// \brief First order IIR filter for D input
   CascadeFilter mDfilter;
 
-  std::vector<double> mDbuffer;
-  size_t mDbufferIndex;
+  alglib::real_1d_array mDbufferX;
+  alglib::real_1d_array mDbufferY;
+  alglib::barycentricinterpolant mResultBary;
+  alglib::real_1d_array mResultPoly;
 };
 
 }

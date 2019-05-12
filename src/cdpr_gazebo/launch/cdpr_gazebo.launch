@@ -20,7 +20,8 @@
     <param name="velocityControllerP"        value="160"/> <!--20.0"-->
     <param name="velocityControllerI"        value="80"/> <!--6.051 /-->
     <param name="velocityControllerD"        value="10"/> <!--"44.066" /-->
-    <param name="velocityControllerDbuffer"  value="11"/> <!--"44.066" /-->
+    <param name="velocityControllerDdegree"  value="3"/>
+    <param name="velocityControllerDbuffer"  value="11"/>
     <param name="velocityControllerMaxI"     value="100.0" />
     <param name="velocityControllerMaxCmd"   value="100.0" />
     <param name="velocityControllerPcutoff"  value="0.1" /> <!-- relative to fs -->
@@ -33,7 +34,8 @@
     <param name="positionControllerP"        value="20.0" /> 
     <param name="positionControllerI"        value="100" />
     <param name="positionControllerD"        value="0.0001" />
-    <param name="positionControllerDbuffer"  value="111"/> <!--"44.066" /-->
+    <param name="positionControllerDdegree"  value="3"/>
+    <param name="positionControllerDbuffer"  value="11"/>
     <param name="positionControllerMaxI"     value="100.0" />
     <param name="positionControllerMaxCmd"   value="100.0" />
 <!-- Tu=0.4 s at Ku=100, Ziegler-Nichols no overshoot>

@@ -141,7 +141,7 @@ add_library(cdpr_gazebo_plugin
   include/cdpr_gazebo/Filter.h
   include/cdpr_gazebo/JointForceCalculator.h
   include/cdpr_gazebo/CdprGazeboPlugin.h)
-target_link_libraries(cdpr_gazebo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(cdpr_gazebo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} libalglib.so)
 add_dependencies(cdpr_gazebo_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(sinevelocitytest src/sinevelocitytest.cpp)

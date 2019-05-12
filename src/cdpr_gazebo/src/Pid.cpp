@@ -48,6 +48,7 @@ gazebo::common::Pid::Pid(PidParameters const &aPidParams) noexcept
 , mPgain(aPidParams.pGain)
 , mIgain(aPidParams.iGain)
 , mDgain(aPidParams.dGain)
+, mDpolynomialDegree(aPidParams.dDegree)
 , mDbufferLength(aPidParams.dBufferLength)
 , mImax(abs(aPidParams.iLimit))
 , mImin(-abs(aPidParams.iLimit))
@@ -64,6 +65,7 @@ gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &a
     mPgain   = aOther.mPgain;
     mIgain   = aOther.mIgain;
     mDgain   = aOther.mDgain;
+    mDpolynomialDegree = aOther.mDpolynomialDegree;
     mDbufferLength = aOther.mDbufferLength;
     mImax    = aOther.mImax;
     mImin    = aOther.mImin;
@@ -79,12 +81,14 @@ gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &a
 }
   
 void gazebo::common::Pid::reset() noexcept {
-  mErrPrev1 = mErrPrev2 = mPerr = mIerr = mDerr = mCmd = 0.0;
+  mLastTime = mPerr = mIerr = mDerr = mCmd = 0.0;
   mPfilter.reset();
   mDfilter.reset();
-  mDbuffer.resize(mDbufferLength);
-  std::fill(mDbuffer.begin(), mDbuffer.end(), 0.0);
-  mDbufferIndex = 0u;
+  mDbufferX.setlength(mDbufferLength);
+  mDbufferY.setlength(mDbufferLength);
+  for(int i = 0; i < mDbufferLength; ++i) {
+    mDbufferX[i] = mDbufferY[i] = 0.0;
+  }
 }
 
 #include <sensor_msgs/Joy.h>
@@ -92,19 +96,21 @@ extern bool theZeroest;
 extern sensor_msgs::Joy pidMsg;
 
 /////////////////////////////////////////////////
-double gazebo::common::Pid::update(double const aDesired, double const aActual, common::Time const aDt) noexcept {
-  if (aDt == common::Time(0, 0)) {
+double gazebo::common::Pid::update(double const aDesired, double const aActual, double const aNow) {
+  if (mLastTime == 0.0) {
     return 0.0;
   }
   else {
     double fTerm = mForwardGain * aDesired;
     double error = aDesired - aActual;
+    double dt = aNow - mLastTime;
+    mLastTime = aNow;
 
     mPerr = mPfilter.update(error);
     double pTerm = mPgain * mPerr;
 
     double prevIerr = mIerr;
-    mIerr = mIerr + aDt.Double() * error;
+    mIerr = mIerr + dt * error;
     double iTerm = mIgain * mIerr;
     if (iTerm > mImax) {
       iTerm = mImax;
@@ -117,18 +123,25 @@ double gazebo::common::Pid::update(double const aDesired, double const aActual, 
     else { // nothing to do
     }
 
-    if (aDt > common::Time(0, 0)) {
-      double derived = derive(error, aDt.Double());
+    if(dt > 0.0) {
+      double derived;
+      try {
+        derived = derive(error, aNow);
+      }
+      catch(...) {
+gzdbg << "alglib exception in Pid" << std::endl;
+        throw common::Exception(__FILE__, __LINE__, "alglib exception in Pid");
+      }
       mDerr = mDfilter.update(derived);
 if(theZeroest) {
 pidMsg.axes[0] = derived;
 pidMsg.axes[1] = mDerr;
-gzdbg << "E " << error << "  diff " << (3.0 * error - 4.0 * mErrPrev1 + mErrPrev2) << "  mDerr " << mDerr << " ";
+gzdbg << "E " << error << "  derived " << derived << "  mDerr " << mDerr;
 }
     }
     else {
 if(theZeroest)
-gzdbg << "dt was " << aDt.Double() << std::endl;
+gzdbg << "dt was " << dt;
     }
     double dTerm = mDgain * mDerr;
 
@@ -154,19 +167,28 @@ gzdbg << "  F " << fTerm << "  P " << pTerm << "  I " << iTerm << "  D " << dTer
   return mCmd;
 }
 
-double gazebo::common::Pid::derive(double const aValue, double const aDt) noexcept {
-  double period = aDt * mDbufferLength;
-  double sumSimple = (mDbuffer[mDbufferIndex] + aValue) / 2.0;
-  double sumComplicated = (mDbuffer[mDbufferIndex] * (-period) + aValue * 2.0 * period) / 2.0;
-  for(size_t i = 0; i < mDbufferLength; ++i) {
-    if(i != mDbufferIndex) {
-      sumSimple += mDbuffer[i];
-      sumComplicated += mDbuffer[i] * period * (2.0 - 3.0 * static_cast<double>((mDbufferLength - i)) / mDbufferLength);
-    }
-    else { // nothing to do
-    }
+double gazebo::common::Pid::derive(double const aValue, double const aNow) {
+  for(int i = 1; i < mDbufferLength; ++i) {
+    mDbufferX[i - 1] = mDbufferX[i];
+    mDbufferY[i - 1] = mDbufferY[i];
   }
-  mDbuffer[mDbufferIndex] = aValue;
-  mDbufferIndex = (mDbufferIndex + 1u) % mDbufferLength;
-  return 2.0 / (period * period) * (2.0 / period * sumComplicated - sumSimple);
+  mDbufferX[mDbufferLength - 1] = aNow;
+  mDbufferY[mDbufferLength - 1] = aValue;
+  alglib::ae_int_t info;
+  alglib::polynomialfitreport report;
+  alglib::polynomialfit(mDbufferX, mDbufferY, mDpolynomialDegree + 1, info, mResultBary, report);
+  alglib::polynomialbar2pow(mResultBary, aNow, 1.0, mResultPoly);
+if(theZeroest)
+gzdbg << mResultPoly[0] << " " << mResultPoly[1] << " " << mResultPoly[2] << " " << mResultPoly[3] << std::endl;
+  for(int i = 1; i <= mDpolynomialDegree; ++i) {
+    mResultPoly[i - 1] = i * mResultPoly[i];
+  }
+if(theZeroest)
+gzdbg << mResultPoly[0] << " " << mResultPoly[1] << " " << mResultPoly[2] << " " << std::endl;
+  double derived = 0;
+  for(int i = mDpolynomialDegree - 1; i > 0; --i) {
+    derived = aNow * (derived + mResultPoly[i]);
+  }
+  derived += mResultPoly[0];
+  return derived;
 }

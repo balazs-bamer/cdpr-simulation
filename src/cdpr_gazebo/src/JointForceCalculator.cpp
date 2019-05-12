@@ -48,7 +48,7 @@ gzdbg << " F = " << mForce << "  P = " << mPositionTarget << "  V = " << mVeloci
 
 extern bool theZeroest;
 
-double gazebo::physics::JointForceCalculator::update() noexcept {
+double gazebo::physics::JointForceCalculator::update() {
   gazebo::common::Time currTime = mPhysicsModel->GetWorld()->SimTime();
   gazebo::common::Time stepTime = currTime - mLastUpdateTime;
   mLastUpdateTime = currTime;
@@ -66,10 +66,10 @@ double gazebo::physics::JointForceCalculator::update() noexcept {
     else if(mUpdateMode == UpdateMode::Velocity) {
 if(theZeroest)
 gzdbg << "V " << mJoint->GetVelocity(0) << "  VT " << mVelocityTarget << "  ";
-      force = mVelocityPid.update(mVelocityTarget, mJoint->GetVelocity(0), stepTime);
+      force = mVelocityPid.update(mVelocityTarget, mJoint->GetVelocity(0), currTime.Double());
     }
     if(mUpdateMode == UpdateMode::Position) {
-      force = mPositionPid.update(mPositionTarget, mJoint->Position(0), stepTime);
+      force = mPositionPid.update(mPositionTarget, mJoint->Position(0), currTime.Double());
 //gzdbg << "position F = " << force << "  p = " << mJoint->Position(0) << "  pt = " << mPositionTarget << "  dt = " << stepTime << std::endl;
     }
   }

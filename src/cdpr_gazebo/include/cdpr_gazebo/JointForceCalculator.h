@@ -59,7 +59,7 @@ public:
   JointForceCalculator& operator=(JointForceCalculator const &aOther) noexcept;
 
   /// \brief Update the joint control using the last value set, returns the force.
-  double update() noexcept;
+  double update();
 
   /// \brief Reset all commands
   void reset() noexcept {
