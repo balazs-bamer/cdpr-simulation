@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
+ * I use the polynomial regression algorithm of Chris Engelsma.
 */
 
 #include <cmath>
@@ -84,9 +85,14 @@ void gazebo::common::Pid::reset() noexcept {
   mLastTime = mPerr = mIerr = mDerr = mCmd = 0.0;
   mPfilter.reset();
   mDfilter.reset();
-  mDbufferX.setlength(mDbufferLength);
-  mDbufferY.setlength(mDbufferLength);
-  for(int i = 0; i < mDbufferLength; ++i) {
+  mDbufferX.resize(mDbufferLength);
+  mDbufferY.resize(mDbufferLength);
+  mFitX.resize(mDpolynomialDegree * 2u + 1u, 0.0);
+  mDpolynomCoefficients.resize(mDpolynomialDegree + 1u, 0.0);
+  std::vector<double> tmp(mDpolynomialDegree + 2u, 0.0);
+  mFitB.resize(mDpolynomialDegree + 1u, tmp);
+  mFitY.resize(mDpolynomialDegree + 1u, 0.0);
+  for(size_t i = 0; i < mDbufferLength; ++i) {
     mDbufferX[i] = mDbufferY[i] = 0.0;
   }
 }
@@ -168,27 +174,102 @@ gzdbg << "  F " << fTerm << "  P " << pTerm << "  I " << iTerm << "  D " << dTer
 }
 
 double gazebo::common::Pid::derive(double const aValue, double const aNow) {
-  for(int i = 1; i < mDbufferLength; ++i) {
+  for(size_t i = 1; i < mDbufferLength; ++i) {
     mDbufferX[i - 1] = mDbufferX[i];
     mDbufferY[i - 1] = mDbufferY[i];
   }
   mDbufferX[mDbufferLength - 1] = aNow;
   mDbufferY[mDbufferLength - 1] = aValue;
-  alglib::ae_int_t info;
-  alglib::polynomialfitreport report;
-  alglib::polynomialfit(mDbufferX, mDbufferY, mDpolynomialDegree + 1, info, mResultBary, report);
-  alglib::polynomialbar2pow(mResultBary, aNow, 1.0, mResultPoly);
+
+  fitPolynomial();
+
 if(theZeroest)
-gzdbg << mResultPoly[0] << " " << mResultPoly[1] << " " << mResultPoly[2] << " " << mResultPoly[3] << std::endl;
-  for(int i = 1; i <= mDpolynomialDegree; ++i) {
-    mResultPoly[i - 1] = i * mResultPoly[i];
+gzdbg << mDpolynomCoefficients[0] << " " << mDpolynomCoefficients[1] << " " << mDpolynomCoefficients[2] << " " << mDpolynomCoefficients[3] << std::endl;
+  for(size_t i = 1; i <= mDpolynomialDegree; ++i) {
+    mDpolynomCoefficients[i - 1] = i * mDpolynomCoefficients[i];
   }
 if(theZeroest)
-gzdbg << mResultPoly[0] << " " << mResultPoly[1] << " " << mResultPoly[2] << " " << std::endl;
+gzdbg << mDpolynomCoefficients[0] << " " << mDpolynomCoefficients[1] << " " << mDpolynomCoefficients[2] << " " << std::endl;
   double derived = 0;
-  for(int i = mDpolynomialDegree - 1; i > 0; --i) {
-    derived = aNow * (derived + mResultPoly[i]);
+  for(size_t i = mDpolynomialDegree - 1; i > 0; --i) {
+    derived = aNow * (derived + mDpolynomCoefficients[i]);
   }
-  derived += mResultPoly[0];
+  derived += mDpolynomCoefficients[0];
   return derived;
+}
+
+void gazebo::common::Pid::fitPolynomial() noexcept {
+  size_t degreePlus1 = mDpolynomialDegree + 1u;
+  size_t degreePlus2 = mDpolynomialDegree + 2u;
+  size_t degreeDoublePlus1 = 2u * mDpolynomialDegree + 1u;
+
+  // X = vector that stores values of sigma(xi^2n)
+  for (size_t i = 0u; i < degreeDoublePlus1; ++i) {
+    mFitX[i] = 0.0;
+    for (size_t j = 0u; j < mDbufferLength; ++j) {
+      mFitX[i] += pow(mDbufferX[j], i);
+    }
+  }
+
+  for (size_t i = 0u; i < degreePlus1; ++i) {
+    for (size_t j = 0u; j < degreePlus1; ++j) { 
+      mFitB[i][j] = mFitX[i + j];
+    }
+  }
+
+  // Y = vector to store values of sigma(xi^n * yi)
+  for (size_t i = 0u; i < degreePlus1; ++i) {
+    mFitY[i] = 0.0;
+    for (size_t j = 0u; j < mDbufferLength; ++j) {
+      mFitY[i] += (double)pow(mDbufferX[j], i) * mDbufferY[j];
+    }
+  }
+
+  // Load values of Y as last column of B
+  for (size_t i = 0u; i < degreePlus1; ++i) {
+    mFitB[i][degreePlus1] = mFitY[i];
+  }
+
+  // Pivotisation of the B matrix.
+  for (size_t i = 0u; i < degreePlus1; ++i) {
+    for (size_t k = i + 1u; k < degreePlus1; ++k) {
+      if (mFitB[i][i] < mFitB[k][i]) {
+        for (size_t j = 0u; j <= degreePlus1; ++j) {
+          double tmp = mFitB[i][j];
+          mFitB[i][j] = mFitB[k][j];
+          mFitB[k][j] = tmp;
+        }
+      }
+      else { // nothing to do
+      }
+    }
+  }
+
+  // Performs the Gaussian elimination.
+  // (1) Make all elements below the pivot equals to zero
+  //     or eliminate the variable.
+  for (size_t i = 0u; i < mDpolynomialDegree; ++i) {
+    for (size_t k = i + 1u; k < degreePlus1; ++k) {
+      double t = mFitB[k][i] / mFitB[i][i];
+      for (size_t j = 0u; j <= degreePlus1; ++j) {
+        mFitB[k][j] -= t * mFitB[i][j];         // (1)
+      }
+    }
+  }
+
+  // Back substitution.
+  // (1) Set the variable as the rhs of last equation
+  // (2) Subtract all lhs values except the target coefficient.
+  // (3) Divide rhs by coefficient of variable being calculated.
+  for (size_t i = mDpolynomialDegree; i < degreePlus1; --i) {
+    mDpolynomCoefficients[i] = mFitB[i][degreePlus1];                   // (1)
+    for (size_t j = 0; j<degreePlus1; ++j) {
+      if (j != i) {
+        mDpolynomCoefficients[i] -= mFitB[i][j] * mDpolynomCoefficients[j];       // (2)
+      }
+      else { // nothing to do
+      }
+    }
+    mDpolynomCoefficients[i] /= mFitB[i][i];                  // (3)
+  }
 }

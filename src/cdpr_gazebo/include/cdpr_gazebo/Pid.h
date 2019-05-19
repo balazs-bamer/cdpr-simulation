@@ -18,7 +18,7 @@
 #ifndef _GAZEBO_Pid_HH_
 #define _GAZEBO_Pid_HH_
 
-#include <libalglib/interpolation.h>
+#include <vector>
 #include "cdpr_gazebo/Filter.h"
 #include "gazebo/common/Time.hh"
 #include "gazebo/util/system.hh"
@@ -115,6 +115,7 @@ public:
   double update(double const aDesired, double const aActual, double const aDt);
 
   double derive(double const aValue, double const aNow);
+  void fitPolynomial() noexcept;
 
 private:
   double mLastTime;
@@ -162,10 +163,13 @@ private:
   /// \brief First order IIR filter for D input
   CascadeFilter mDfilter;
 
-  alglib::real_1d_array mDbufferX;
-  alglib::real_1d_array mDbufferY;
-  alglib::barycentricinterpolant mResultBary;
-  alglib::real_1d_array mResultPoly;
+  std::vector<double> mDbufferX;
+  std::vector<double> mDbufferY;
+  std::vector<double> mFitX;
+  std::vector<double> mDpolynomCoefficients;
+  // B = normal augmented matrix that stores the equations.
+  std::vector<std::vector<double>> mFitB;
+  std::vector<double> mFitY;
 };
 
 }
