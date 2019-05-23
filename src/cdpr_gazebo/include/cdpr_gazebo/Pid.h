@@ -112,12 +112,13 @@ public:
   /// The return value is an updated command to be passed
   /// to the object being controlled.
   /// \return the command value
-  double update(double const aDesired, double const aActual, double const aDt);
+  double update(double const aDesired, double const aActual, double const aDt) noexcept;
 
-  double derive(double const aValue, double const aNow);
+  double derive(double const aValue, double const aNow) noexcept;
   void fitPolynomial() noexcept;
 
 private:
+  bool   mWasLastTime;
   double mLastTime;
 
   /// \brief Current error.

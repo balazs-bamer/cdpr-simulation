@@ -141,7 +141,6 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
   mJointNames.resize(cWireCount);
   mForceCalculators.resize(cWireCount, gazebo::physics::JointForceCalculator(mPhysicsModel, gazebo::physics::JointPtr(nullptr), positionPidController, velocityPidController));
 
-  auto jointController = mPhysicsModel->GetJointController();
   size_t jointsRead = 0u; 
   for(size_t i = 0u; i < mPhysicsModel->GetJointCount(); ++i) {
     physics::JointPtr joint = mPhysicsModel->GetJoints()[i];

@@ -44,6 +44,7 @@ gzdbg << " F = " << mForce << "  P = " << mPositionTarget << "  V = " << mVeloci
   }
   else { // nothing to do
   }
+  return *this;
 }
 
 extern bool theZeroest;
@@ -70,7 +71,6 @@ gzdbg << "V " << mJoint->GetVelocity(0) << "  VT " << mVelocityTarget << "  ";
     }
     if(mUpdateMode == UpdateMode::Position) {
       force = mPositionPid.update(mPositionTarget, mJoint->Position(0), currTime.Double());
-//gzdbg << "position F = " << force << "  p = " << mJoint->Position(0) << "  pt = " << mPositionTarget << "  dt = " << stepTime << std::endl;
     }
   }
   else { // nothing to do

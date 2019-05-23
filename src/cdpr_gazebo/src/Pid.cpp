@@ -82,7 +82,8 @@ gazebo::common::Pid& gazebo::common::Pid::operator=(const gazebo::common::Pid &a
 }
   
 void gazebo::common::Pid::reset() noexcept {
-  mLastTime = mPerr = mIerr = mDerr = mCmd = 0.0;
+  mWasLastTime = false;
+  mPerr = mIerr = mDerr = mCmd = 0.0;
   mPfilter.reset();
   mDfilter.reset();
   mDbufferX.resize(mDbufferLength);
@@ -102,9 +103,10 @@ extern bool theZeroest;
 extern sensor_msgs::Joy pidMsg;
 
 /////////////////////////////////////////////////
-double gazebo::common::Pid::update(double const aDesired, double const aActual, double const aNow) {
-  if (mLastTime == 0.0) {
-    return 0.0;
+double gazebo::common::Pid::update(double const aDesired, double const aActual, double const aNow) noexcept {
+  if (!mWasLastTime) {
+    mWasLastTime = true;
+    mCmd = 0.0;
   }
   else {
     double fTerm = mForwardGain * aDesired;
@@ -131,13 +133,7 @@ double gazebo::common::Pid::update(double const aDesired, double const aActual, 
 
     if(dt > 0.0) {
       double derived;
-      try {
-        derived = derive(error, aNow);
-      }
-      catch(...) {
-gzdbg << "alglib exception in Pid" << std::endl;
-        throw common::Exception(__FILE__, __LINE__, "alglib exception in Pid");
-      }
+      derived = derive(error, aNow);
       mDerr = mDfilter.update(derived);
 if(theZeroest) {
 pidMsg.axes[0] = derived;
@@ -169,11 +165,12 @@ gzdbg << "  F " << fTerm << "  P " << pTerm << "  I " << iTerm << "  D " << dTer
     else { // nothing to do
     }
   }
+  mLastTime = aNow;
 
   return mCmd;
 }
 
-double gazebo::common::Pid::derive(double const aValue, double const aNow) {
+double gazebo::common::Pid::derive(double const aValue, double const aNow) noexcept {
   for(size_t i = 1; i < mDbufferLength; ++i) {
     mDbufferX[i - 1] = mDbufferX[i];
     mDbufferY[i - 1] = mDbufferY[i];
