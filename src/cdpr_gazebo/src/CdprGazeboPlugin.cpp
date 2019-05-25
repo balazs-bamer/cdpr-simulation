@@ -58,9 +58,6 @@ void gazebo::CdprGazeboPlugin::Load(physics::ModelPtr aModel, sdf::ElementPtr) {
   gzdbg << "Publish period = " << mPublishPeriod << std::endl;
   mPreviousProcessingTime = 0.0;
   
-  mRosNode.getParam(cLaunchParamVelocityEpsilon, mVelocityEpsilon);
-  gzdbg << "Velocity epsilon below which position is held fix = " << mVelocityEpsilon << std::endl;
-
   mUpdateEvent = event::Events::ConnectWorldUpdateBegin(boost::bind(&CdprGazeboPlugin::update, this));
 
   ros::spinOnce();
@@ -137,9 +134,13 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
   auto positionPidController = common::Pid(pidParameters);
   gzdbg << "Position controller: P = " << pidParameters.pGain << "  I = " << pidParameters.iGain << "  D = " << pidParameters.dGain << "  maxI = " << pidParameters.iLimit << "  maxCmd = " << pidParameters.cmdLimit << std::endl;
 
+  double velocityEpsilon;
+  mRosNode.getParam(cLaunchParamVelocityEpsilon, velocityEpsilon);
+  gzdbg << "Velocity epsilon below which position is held fix = " << velocityEpsilon << std::endl;
+
   mJoints.resize(cWireCount);
   mJointNames.resize(cWireCount);
-  mForceCalculators.resize(cWireCount, gazebo::physics::JointForceCalculator(mPhysicsModel, gazebo::physics::JointPtr(nullptr), positionPidController, velocityPidController));
+  mForceCalculators.resize(cWireCount);
 
   size_t jointsRead = 0u; 
   for(size_t i = 0u; i < mPhysicsModel->GetJointCount(); ++i) {
@@ -149,7 +150,7 @@ void gazebo::CdprGazeboPlugin::initJointsAndController() {
     if(name.find(cSdfNameCable) == 0u) {
       size_t indexCableFound = stoul(name.substr(std::strlen(cSdfNameCable)));
       if(indexCableFound < cWireCount) {
-        gazebo::physics::JointForceCalculator forceCalculator(mPhysicsModel, joint, positionPidController, velocityPidController);
+        gazebo::physics::JointForceCalculator forceCalculator(mPhysicsModel, joint, positionPidController, velocityPidController, velocityEpsilon);
         forceCalculator.setPositionTarget(joint->Position());
         mJoints[indexCableFound] = joint;
         mJointNames[indexCableFound] = name;
@@ -206,6 +207,7 @@ void gazebo::CdprGazeboPlugin::update() {
     for(size_t i = 0; i < cWireCount; ++i) {
       mForceCalculators[i].setVelocityTarget(mVelocityCommand.axes[i]);
     }
+    mVelocityCommandReceived = false;
   }
   else { // nothing to do
   }
@@ -213,6 +215,7 @@ void gazebo::CdprGazeboPlugin::update() {
     for(size_t i = 0; i < cWireCount; ++i) {
       mForceCalculators[i].setPositionTarget(mPositionCommand.axes[i]);
     }
+    mPositionCommandReceived = false;
   }
   else { // nothing to do
   }

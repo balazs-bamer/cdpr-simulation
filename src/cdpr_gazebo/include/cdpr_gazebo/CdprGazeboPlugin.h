@@ -58,7 +58,6 @@ static constexpr char          cPidTopic[]                       = "pid";
   event::ConnectionPtr           mUpdateEvent;
   double                         mPublishPeriod;
   double                         mPreviousProcessingTime;
-  double                         mVelocityEpsilon;
 
   std::vector<std::string>       mJointNames;
   std::vector<physics::JointPtr> mJoints;

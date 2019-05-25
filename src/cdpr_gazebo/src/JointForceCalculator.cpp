@@ -19,28 +19,35 @@
 #include <gazebo/physics/World.hh>
 
 
+gazebo::physics::JointForceCalculator::JointForceCalculator() noexcept
+: mPhysicsModel(nullptr)
+, mJoint(nullptr)
+, mVelocityEpsilon(0.0)
+, mLastUpdateTime(0.0) {
+}
   
-gazebo::physics::JointForceCalculator::JointForceCalculator(ModelPtr aModel, JointPtr aJoint, gazebo::common::Pid const &aPositionPid, gazebo::common::Pid const &aVelocityPid) noexcept
+gazebo::physics::JointForceCalculator::JointForceCalculator(ModelPtr aModel, JointPtr aJoint, gazebo::common::Pid const &aPositionPid, gazebo::common::Pid const &aVelocityPid, double const aVelocityEpsilon) noexcept
 : mPhysicsModel(aModel)
 , mJoint(aJoint)
 , mPositionPid(aPositionPid)
 , mVelocityPid(aVelocityPid)
+, mVelocityEpsilon(aVelocityEpsilon)
 , mLastUpdateTime(mPhysicsModel->GetWorld()->SimTime()) {
 }
 
 gazebo::physics::JointForceCalculator& gazebo::physics::JointForceCalculator::operator=(gazebo::physics::JointForceCalculator const &aOther) noexcept {
   if(this != &aOther) {
-    mPhysicsModel   = aOther.mPhysicsModel;
-    mJoint          = aOther.mJoint;
-    mPositionPid    = aOther.mPositionPid;
-    mVelocityPid    = aOther.mVelocityPid;
-    mUpdateMode     = aOther.mUpdateMode;
-    mForce          = aOther.mForce;
-    mPositionTarget = aOther.mPositionTarget;
-    mVelocityTarget = aOther.mVelocityTarget;
-    mLastUpdateTime = mPhysicsModel->GetWorld()->SimTime();
+    mPhysicsModel    = aOther.mPhysicsModel;
+    mJoint           = aOther.mJoint;
+    mPositionPid     = aOther.mPositionPid;
+    mVelocityPid     = aOther.mVelocityPid;
+    mUpdateMode      = aOther.mUpdateMode;
+    mForce           = aOther.mForce;
+    mPositionTarget  = aOther.mPositionTarget;
+    mVelocityTarget  = aOther.mVelocityTarget;
+    mVelocityEpsilon = aOther.mVelocityEpsilon;
+    mLastUpdateTime  = mPhysicsModel->GetWorld()->SimTime();
     reset();
-gzdbg << " F = " << mForce << "  P = " << mPositionTarget << "  V = " << mVelocityTarget << std::endl;
   }
   else { // nothing to do
   }
@@ -56,21 +63,31 @@ double gazebo::physics::JointForceCalculator::update() {
 
   double force = 0.0;
 
-  // Skip the update step if SimTime appears to have gone backward.
-  // Negative update time wreaks havok on the integrators.
-  // This happens when World::ResetTime is called.
-  // TODO: fix this when World::ResetTime is improved
   if (stepTime > 0) {
     if(mUpdateMode == UpdateMode::Force) {
+      mLastPosition = mJoint->Position(0);
       force = mForce;
     }
     else if(mUpdateMode == UpdateMode::Velocity) {
+      if(abs(mVelocityTarget) < mVelocityEpsilon) {
 if(theZeroest)
 gzdbg << "V " << mJoint->GetVelocity(0) << "  VT " << mVelocityTarget << "  ";
-      force = mVelocityPid.update(mVelocityTarget, mJoint->GetVelocity(0), currTime.Double());
+        mLastPosition = mJoint->Position(0);
+        force = mVelocityPid.update(mVelocityTarget, mJoint->GetVelocity(0), currTime.Double());
+      }
+      else {
+if(theZeroest)
+gzdbg << "P " << mJoint->Position(0) << "  LP " << mLastPosition << "  ";
+        force = mPositionPid.update(mLastPosition, mJoint->Position(0), currTime.Double());
+      }
     }
-    if(mUpdateMode == UpdateMode::Position) {
+    else if(mUpdateMode == UpdateMode::Position) {
+if(theZeroest)
+gzdbg << "P " << mJoint->Position(0) << "  PT " << mPositionTarget << "  ";
+      mLastPosition = mJoint->Position(0);
       force = mPositionPid.update(mPositionTarget, mJoint->Position(0), currTime.Double());
+    }
+    else { // nothing to do
     }
   }
   else { // nothing to do

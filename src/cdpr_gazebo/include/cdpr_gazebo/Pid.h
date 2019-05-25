@@ -79,17 +79,7 @@ public:
     FilterParameters dFilter;
   };
 
-  /// \brief Constructor, zeros out Pid values when created and
-  /// initialize Pid-gains and integral term limits:[mImax:mImin]-[I1:I2].
-  ///
-  /// Disable command clamping by setting _mCmdMin to a value larger
-  /// than _mCmdMax. Command clamping is disabled by default.
-  ///
-  /// \param[in] aPgain  The proportional gain.
-  /// \param[in] aIgain  The integral gain.
-  /// \param[in] aDgain  The derivative gain.
-  /// \param[in] aIlimit The integral limit.
-  /// \param[in] aCmdLimit Output limit.
+  Pid() noexcept;
   Pid(PidParameters const &aParams) noexcept;
 
   /// \brief Destructor
@@ -164,6 +154,7 @@ private:
   /// \brief First order IIR filter for D input
   CascadeFilter mDfilter;
 
+  size_t mDbufferFill;
   std::vector<double> mDbufferX;
   std::vector<double> mDbufferY;
   std::vector<double> mFitX;

@@ -44,6 +44,22 @@ double gazebo::common::Pid::CascadeFilter::update(double const aInput) noexcept 
 }
 
 /////////////////////////////////////////////////
+gazebo::common::Pid::Pid() noexcept
+: mForwardGain(0.0)
+, mPgain(0.0)
+, mIgain(0.0)
+, mDgain(0.0)
+, mDpolynomialDegree(1u)
+, mDbufferLength(2u)
+, mImax(0.0)
+, mImin(0.0)
+, mCmdMax(0.0)
+, mCmdMin(0.0)
+, mPfilter(0.0, 0.0, 0u)
+, mDfilter(0.0, 0.0, 0u) {
+  reset();
+}
+
 gazebo::common::Pid::Pid(PidParameters const &aPidParams) noexcept
 : mForwardGain(aPidParams.forwardGain)
 , mPgain(aPidParams.pGain)
@@ -96,6 +112,7 @@ void gazebo::common::Pid::reset() noexcept {
   for(size_t i = 0; i < mDbufferLength; ++i) {
     mDbufferX[i] = mDbufferY[i] = 0.0;
   }
+  mDbufferFill = 0u;
 }
 
 #include <sensor_msgs/Joy.h>
@@ -178,20 +195,21 @@ double gazebo::common::Pid::derive(double const aValue, double const aNow) noexc
   mDbufferX[mDbufferLength - 1] = aNow;
   mDbufferY[mDbufferLength - 1] = aValue;
 
-  fitPolynomial();
-
-if(theZeroest)
-gzdbg << mDpolynomCoefficients[0] << " " << mDpolynomCoefficients[1] << " " << mDpolynomCoefficients[2] << " " << mDpolynomCoefficients[3] << std::endl;
-  for(size_t i = 1; i <= mDpolynomialDegree; ++i) {
-    mDpolynomCoefficients[i - 1] = i * mDpolynomCoefficients[i];
-  }
-if(theZeroest)
-gzdbg << mDpolynomCoefficients[0] << " " << mDpolynomCoefficients[1] << " " << mDpolynomCoefficients[2] << " " << std::endl;
   double derived = 0;
-  for(size_t i = mDpolynomialDegree - 1; i > 0; --i) {
-    derived = aNow * (derived + mDpolynomCoefficients[i]);
+  if(mDbufferFill >= mDbufferLength) {
+    fitPolynomial();
+
+    for(size_t i = 1; i <= mDpolynomialDegree; ++i) {
+      mDpolynomCoefficients[i - 1] = i * mDpolynomCoefficients[i];
+    }
+    for(size_t i = mDpolynomialDegree - 1; i > 0; --i) {
+      derived = aNow * (derived + mDpolynomCoefficients[i]);
+    }
+    derived += mDpolynomCoefficients[0];
   }
-  derived += mDpolynomCoefficients[0];
+  else {
+    ++mDbufferFill;
+  }
   return derived;
 }
 

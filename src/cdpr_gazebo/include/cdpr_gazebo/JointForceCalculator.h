@@ -41,6 +41,8 @@ class JointForceCalculator {
  
   UpdateMode            mUpdateMode = UpdateMode::Force;
 
+  double                mVelocityEpsilon;
+  double                mLastPosition   = 0.0;
   double                mForce          = 0.0;
   double                mPositionTarget = 0.0;
   double                mVelocityTarget = 0.0;
@@ -48,9 +50,11 @@ class JointForceCalculator {
   gazebo::common::Time  mLastUpdateTime;
 
 public:
+  JointForceCalculator() noexcept;
+
   /// \brief Constructor
   /// \param[in] _model Model that uses this joint controller.
-  JointForceCalculator(ModelPtr aModel, JointPtr aJoint, gazebo::common::Pid const &aPositionPid, gazebo::common::Pid const &aVelocityPid) noexcept;
+  JointForceCalculator(ModelPtr aModel, JointPtr aJoint, gazebo::common::Pid const &aPositionPid, gazebo::common::Pid const &aVelocityPid, double const aVelocityEpsilon) noexcept;
 
   /// \brief Destructor
   virtual ~JointForceCalculator() {
