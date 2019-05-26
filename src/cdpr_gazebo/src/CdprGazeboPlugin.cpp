@@ -191,7 +191,7 @@ void gazebo::CdprGazeboPlugin::initCommunication() {
   mJointStates.velocity.resize(cWireCount);
   mJointStates.effort.resize(cWireCount);
 mPidPublisher = mRosNode.advertise<sensor_msgs::Joy>(cPidTopic, cPublisherQueueSize);
-pidMsg.axes.resize(4);
+pidMsg.axes.resize(9);
 
   mWireStatePublisher = mRosNode.advertise<cdpr_gazebo::WireStates>(cWireStatesTopic, cPublisherQueueSize);
   mPlatformStatePublisher = mRosNode.advertise<cdpr_gazebo::PlatformState>(cPlatformPoseTopic, cPublisherQueueSize);
@@ -222,6 +222,9 @@ void gazebo::CdprGazeboPlugin::update() {
   for(size_t i = 0; i < cWireCount; ++i) {
 theZeroest = i == 0;
     mJoints[i]->SetForce(0, mForceCalculators[i].update());
+if(theZeroest) {
+pidMsg.axes[4] = mJoints[0]->GetForce(0);
+}
   }
 
   // TODO develop logic for wire state publishing

@@ -135,8 +135,12 @@ double gazebo::common::Pid::update(double const aDesired, double const aActual, 
     double pTerm = mPgain * mPerr;
 
     double prevIerr = mIerr;
-    mIerr = mIerr + dt * error;
+    mIerr += dt * error;
     double iTerm = mIgain * mIerr;
+if(theZeroest) {
+pidMsg.axes[0] = pTerm;
+pidMsg.axes[1] = iTerm;
+}
     if (iTerm > mImax) {
       iTerm = mImax;
       mIerr = iTerm / mIgain;
@@ -153,16 +157,16 @@ double gazebo::common::Pid::update(double const aDesired, double const aActual, 
       derived = derive(error, aNow);
       mDerr = mDfilter.update(derived);
 if(theZeroest) {
-pidMsg.axes[0] = derived;
-pidMsg.axes[1] = mDerr;
+pidMsg.axes[3] = derived;
 gzdbg << "E " << error << "  derived " << derived << "  mDerr " << mDerr;
 }
     }
-    else {
-if(theZeroest)
-gzdbg << "dt was " << dt;
+    else { // nothing to do
     }
     double dTerm = mDgain * mDerr;
+if(theZeroest) {
+pidMsg.axes[2] = dTerm;
+}
 
     double cmd = fTerm + pTerm + iTerm + dTerm;
 
@@ -177,7 +181,7 @@ gzdbg << "  F " << fTerm << "  P " << pTerm << "  I " << iTerm << "  D " << dTer
 
     if(mCmd != cmd) {
       mIerr = prevIerr;
-      mCmd += iTerm - mIgain * prevIerr;
+      mCmd += dt * error * mIgain;
     }
     else { // nothing to do
     }
@@ -194,6 +198,11 @@ double gazebo::common::Pid::derive(double const aValue, double const aNow) noexc
   }
   mDbufferX[mDbufferLength - 1] = aNow;
   mDbufferY[mDbufferLength - 1] = aValue;
+
+if(theZeroest) {
+gzdbg << mDbufferX[0] << ' ' << mDbufferX[1] << ' ' << mDbufferX[2] << ' ' << mDbufferX[3] << ' ' << mDbufferX[4] << ' ' << std::endl;
+gzdbg << mDbufferY[0] << ' ' << mDbufferY[1] << ' ' << mDbufferY[2] << ' ' << mDbufferY[3] << ' ' << mDbufferY[4] << ' ' << std::endl;
+}
 
   double derived = 0;
   if(mDbufferFill >= mDbufferLength) {
