@@ -106,11 +106,14 @@ void gazebo::common::Pid::reset() noexcept {
   mDbufferY.resize(mDbufferLength);
   mFitX.resize(mDpolynomialDegree * 2u + 1u, 0.0);
   mDpolynomCoefficients.resize(mDpolynomialDegree + 1u, 0.0);
-  std::vector<double> tmp(mDpolynomialDegree + 2u, 0.0);
-  mFitB.resize(mDpolynomialDegree + 1u, tmp);
+  mFitB.resize(mDpolynomialDegree + 1u);
+  for(size_t i = 0; i <= mDpolynomialDegree; ++i) {
+    mFitB[i].resize(mDpolynomialDegree + 2u, 0.0);
+  }
   mFitY.resize(mDpolynomialDegree + 1u, 0.0);
   for(size_t i = 0; i < mDbufferLength; ++i) {
-    mDbufferX[i] = mDbufferY[i] = 0.0;
+    mDbufferX.at(i) = mDbufferY.at(i) = 0.0;
+//    mDbufferX[i] = mDbufferY[i] = 0.0;
   }
   mDbufferFill = 0u;
 }
@@ -207,8 +210,7 @@ gzdbg << mDbufferY[0] << ' ' << mDbufferY[1] << ' ' << mDbufferY[2] << ' ' << mD
   double derived = 0;
   if(mDbufferFill >= mDbufferLength) {
     fitPolynomial();
-
-    for(size_t i = 1; i <= mDpolynomialDegree; ++i) {
+    for(size_t i = 1; i < mDpolynomialDegree; ++i) {
       mDpolynomCoefficients[i - 1] = i * mDpolynomCoefficients[i];
     }
     for(size_t i = mDpolynomialDegree - 1; i > 0; --i) {
