@@ -108,7 +108,7 @@ public:
   void fitPolynomial() noexcept;
 
 private:
-  bool   mWasLastTime;
+  bool mWasLastTime;
   double mLastTime;
 
   /// \brief Current error.
@@ -154,7 +154,7 @@ private:
   /// \brief First order IIR filter for D input
   CascadeFilter mDfilter;
 
-  size_t mDbufferFill;
+  size_t mDbufferMissing;
   std::vector<double> mDbufferX;
   std::vector<double> mDbufferY;
   std::vector<double> mFitX;

@@ -112,10 +112,9 @@ void gazebo::common::Pid::reset() noexcept {
   }
   mFitY.resize(mDpolynomialDegree + 1u, 0.0);
   for(size_t i = 0; i < mDbufferLength; ++i) {
-    mDbufferX.at(i) = mDbufferY.at(i) = 0.0;
-//    mDbufferX[i] = mDbufferY[i] = 0.0;
+    mDbufferX[i] = mDbufferY[i] = 0.0;
   }
-  mDbufferFill = 0u;
+  mDbufferMissing = mDbufferLength;
 }
 
 #include <sensor_msgs/Joy.h>
@@ -201,32 +200,27 @@ double gazebo::common::Pid::derive(double const aValue, double const aNow) noexc
   }
   mDbufferX[mDbufferLength - 1] = aNow;
   mDbufferY[mDbufferLength - 1] = aValue;
-
-if(theZeroest) {
-gzdbg << mDbufferX[0] << ' ' << mDbufferX[1] << ' ' << mDbufferX[2] << ' ' << mDbufferX[3] << ' ' << mDbufferX[4] << ' ' << std::endl;
-gzdbg << mDbufferY[0] << ' ' << mDbufferY[1] << ' ' << mDbufferY[2] << ' ' << mDbufferY[3] << ' ' << mDbufferY[4] << ' ' << std::endl;
-}
+  mDbufferMissing -= (mDbufferMissing > 0u ? 1u : 0u);
 
   double derived = 0;
-  if(mDbufferFill >= mDbufferLength) {
+  if(mDbufferMissing == 0u) {
     fitPolynomial();
-    for(size_t i = 1; i < mDpolynomialDegree; ++i) {
+    for(size_t i = 1; i <= mDpolynomialDegree; ++i) {
       mDpolynomCoefficients[i - 1] = i * mDpolynomCoefficients[i];
     }
-    for(size_t i = mDpolynomialDegree - 1; i > 0; --i) {
+    mDpolynomCoefficients[mDpolynomialDegree] = 0.0;
+    for(size_t i = mDpolynomialDegree; i > 0; --i) {
       derived = aNow * (derived + mDpolynomCoefficients[i]);
     }
     derived += mDpolynomCoefficients[0];
   }
-  else {
-    ++mDbufferFill;
+  else { // nothing to do
   }
   return derived;
 }
 
 void gazebo::common::Pid::fitPolynomial() noexcept {
   size_t degreePlus1 = mDpolynomialDegree + 1u;
-  size_t degreePlus2 = mDpolynomialDegree + 2u;
   size_t degreeDoublePlus1 = 2u * mDpolynomialDegree + 1u;
 
   // X = vector that stores values of sigma(xi^2n)

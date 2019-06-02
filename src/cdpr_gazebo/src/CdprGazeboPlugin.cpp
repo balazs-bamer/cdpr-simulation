@@ -197,7 +197,7 @@ pidMsg.axes.resize(9);
   mPlatformStatePublisher = mRosNode.advertise<cdpr_gazebo::PlatformState>(cPlatformPoseTopic, cPublisherQueueSize);
 }
 
-bool theZeroest;
+bool theZeroest = true;
 
 void gazebo::CdprGazeboPlugin::update() {
   mVelocityCallbackQueue.callAvailable();

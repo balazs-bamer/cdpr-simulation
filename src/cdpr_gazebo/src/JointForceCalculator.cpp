@@ -92,7 +92,6 @@ gzdbg << "P " << mJoint->Position(0) << "  PT " << mPositionTarget << "  ";
   }
   else { // nothing to do
   }
-
   return force;
 }
 
