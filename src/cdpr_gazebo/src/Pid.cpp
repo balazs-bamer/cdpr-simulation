@@ -232,6 +232,7 @@ void gazebo::common::Pid::fitPolynomial() noexcept {
   }
 
   for (size_t i = 0u; i < degreePlus1; ++i) {
+    mDpolynomCoefficients[i] = 0.0;
     for (size_t j = 0u; j < degreePlus1; ++j) { 
       mFitB[i][j] = mFitX[i + j];
     }
@@ -241,7 +242,7 @@ void gazebo::common::Pid::fitPolynomial() noexcept {
   for (size_t i = 0u; i < degreePlus1; ++i) {
     mFitY[i] = 0.0;
     for (size_t j = 0u; j < mDbufferLength; ++j) {
-      mFitY[i] += (double)pow(mDbufferX[j], i) * mDbufferY[j];
+      mFitY[i] += pow(mDbufferX[j], i) * mDbufferY[j];
     }
   }
 
@@ -274,6 +275,7 @@ void gazebo::common::Pid::fitPolynomial() noexcept {
       for (size_t j = 0u; j <= degreePlus1; ++j) {
         mFitB[k][j] -= t * mFitB[i][j];         // (1)
       }
+      mFitB[k][i] = 0.0; // it is definitely exactly 0
     }
   }
 
@@ -283,7 +285,7 @@ void gazebo::common::Pid::fitPolynomial() noexcept {
   // (3) Divide rhs by coefficient of variable being calculated.
   for (size_t i = mDpolynomialDegree; i < degreePlus1; --i) {
     mDpolynomCoefficients[i] = mFitB[i][degreePlus1];                   // (1)
-    for (size_t j = 0; j<degreePlus1; ++j) {
+    for (size_t j = 0; j < degreePlus1; ++j) {
       if (j != i) {
         mDpolynomCoefficients[i] -= mFitB[i][j] * mDpolynomCoefficients[j];       // (2)
       }
