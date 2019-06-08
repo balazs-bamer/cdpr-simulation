@@ -69,7 +69,7 @@ double gazebo::physics::JointForceCalculator::update() {
       force = mForce;
     }
     else if(mUpdateMode == UpdateMode::Velocity) {
-      if(abs(mVelocityTarget) < mVelocityEpsilon) {
+      if(abs(mVelocityTarget) > mVelocityEpsilon) {
 if(theZeroest)
 gzdbg << "V " << mJoint->GetVelocity(0) << "  VT " << mVelocityTarget << "  ";
         mLastPosition = mJoint->Position(0);
