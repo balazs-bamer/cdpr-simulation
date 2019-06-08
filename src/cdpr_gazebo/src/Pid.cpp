@@ -104,13 +104,10 @@ void gazebo::common::Pid::reset() noexcept {
   mDfilter.reset();
   mDbufferX.resize(mDbufferLength);
   mDbufferY.resize(mDbufferLength);
-  mFitX.resize(mDpolynomialDegree * 2u + 1u, 0.0);
-  mDpolynomCoefficients.resize(mDpolynomialDegree + 1u, 0.0);
+  mFitX.resize(mDpolynomialDegree *2u + 1u);
+  mFitA.resize(mDpolynomialDegree + 1u, mDpolynomialDegree + 1u);
   mFitB.resize(mDpolynomialDegree + 1u);
-  for(size_t i = 0; i <= mDpolynomialDegree; ++i) {
-    mFitB[i].resize(mDpolynomialDegree + 2u, 0.0);
-  }
-  mFitY.resize(mDpolynomialDegree + 1u, 0.0);
+  mDpolynomCoefficients.resize(mDpolynomialDegree + 1u);
   for(size_t i = 0; i < mDbufferLength; ++i) {
     mDbufferX[i] = mDbufferY[i] = 0.0;
   }
@@ -232,66 +229,19 @@ void gazebo::common::Pid::fitPolynomial() noexcept {
   }
 
   for (size_t i = 0u; i < degreePlus1; ++i) {
-    mDpolynomCoefficients[i] = 0.0;
     for (size_t j = 0u; j < degreePlus1; ++j) { 
-      mFitB[i][j] = mFitX[i + j];
+      mFitA(i, j) = mFitX[i + j];
     }
   }
 
   // Y = vector to store values of sigma(xi^n * yi)
   for (size_t i = 0u; i < degreePlus1; ++i) {
-    mFitY[i] = 0.0;
+    double tmp = 0.0;
     for (size_t j = 0u; j < mDbufferLength; ++j) {
-      mFitY[i] += pow(mDbufferX[j], i) * mDbufferY[j];
+      tmp += pow(mDbufferX[j], i) * mDbufferY[j];
     }
+    mFitB(i) = tmp;
   }
 
-  // Load values of Y as last column of B
-  for (size_t i = 0u; i < degreePlus1; ++i) {
-    mFitB[i][degreePlus1] = mFitY[i];
-  }
-
-  // Pivotisation of the B matrix.
-  for (size_t i = 0u; i < degreePlus1; ++i) {
-    for (size_t k = i + 1u; k < degreePlus1; ++k) {
-      if (mFitB[i][i] < mFitB[k][i]) {
-        for (size_t j = 0u; j <= degreePlus1; ++j) {
-          double tmp = mFitB[i][j];
-          mFitB[i][j] = mFitB[k][j];
-          mFitB[k][j] = tmp;
-        }
-      }
-      else { // nothing to do
-      }
-    }
-  }
-
-  // Performs the Gaussian elimination.
-  // (1) Make all elements below the pivot equals to zero
-  //     or eliminate the variable.
-  for (size_t i = 0u; i < mDpolynomialDegree; ++i) {
-    for (size_t k = i + 1u; k < degreePlus1; ++k) {
-      double t = mFitB[k][i] / mFitB[i][i];
-      for (size_t j = 0u; j <= degreePlus1; ++j) {
-        mFitB[k][j] -= t * mFitB[i][j];         // (1)
-      }
-      mFitB[k][i] = 0.0; // it is definitely exactly 0
-    }
-  }
-
-  // Back substitution.
-  // (1) Set the variable as the rhs of last equation
-  // (2) Subtract all lhs values except the target coefficient.
-  // (3) Divide rhs by coefficient of variable being calculated.
-  for (size_t i = mDpolynomialDegree; i < degreePlus1; --i) {
-    mDpolynomCoefficients[i] = mFitB[i][degreePlus1];                   // (1)
-    for (size_t j = 0; j < degreePlus1; ++j) {
-      if (j != i) {
-        mDpolynomCoefficients[i] -= mFitB[i][j] * mDpolynomCoefficients[j];       // (2)
-      }
-      else { // nothing to do
-      }
-    }
-    mDpolynomCoefficients[i] /= mFitB[i][i];                  // (3)
-  }
+  mDpolynomCoefficients = mFitA.colPivHouseholderQr().solve(mFitB);
 }

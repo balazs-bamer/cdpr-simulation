@@ -19,6 +19,7 @@
 #define _GAZEBO_Pid_HH_
 
 #include <vector>
+#include <eigen3/Eigen/Dense>
 #include "cdpr_gazebo/Filter.h"
 #include "gazebo/common/Time.hh"
 #include "gazebo/util/system.hh"
@@ -158,10 +159,9 @@ private:
   std::vector<double> mDbufferX;
   std::vector<double> mDbufferY;
   std::vector<double> mFitX;
-  std::vector<double> mDpolynomCoefficients;
-  // B = normal augmented matrix that stores the equations.
-  std::vector<std::vector<double>> mFitB;
-  std::vector<double> mFitY;
+  Eigen::MatrixXd mFitA;
+  Eigen::VectorXd mFitB;
+  Eigen::VectorXd mDpolynomCoefficients;
 };
 
 }

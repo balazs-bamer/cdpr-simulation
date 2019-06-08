@@ -25,6 +25,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 find_package(gazebo REQUIRED)
 
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -141,7 +143,7 @@ add_library(cdpr_gazebo_plugin
   include/cdpr_gazebo/Filter.h
   include/cdpr_gazebo/JointForceCalculator.h
   include/cdpr_gazebo/CdprGazeboPlugin.h)
-target_link_libraries(cdpr_gazebo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(cdpr_gazebo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} Eigen3::Eigen)
 add_dependencies(cdpr_gazebo_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(sinevelocitytest src/sinevelocitytest.cpp)
