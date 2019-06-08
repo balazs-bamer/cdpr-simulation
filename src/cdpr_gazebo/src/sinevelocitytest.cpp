@@ -3,9 +3,10 @@
 #include <cmath>
 
 int main(int argc, char **argv) {
+  const double cGiga              = 1e9;
   const double cPublishFrequency  = 10.0; // Hz
   const double cVelocityAmplitude =  0.05; // m/s
-  const double cVelocityFrequency =  0.05; // Hz
+  const double cVelocityFrequency =  0.1; // Hz
   const size_t cWireCount         =  4u;
 
   ros::init(argc, argv, "sinevelocitytest");
@@ -18,11 +19,13 @@ int main(int argc, char **argv) {
 
   double time = 0.0;
   while (ros::ok()) {
-    double velocity = cVelocityAmplitude * -sin(time * cVelocityFrequency * 2 * M_PI);
+    double velocity = cVelocityAmplitude * sin(time * cVelocityFrequency * 2 * M_PI);
     for(size_t i = 0; i < cWireCount; ++i) {
       velocityCommand.axes[i] = velocity;
     }
-    ROS_INFO("%f", velocity);
+    velocityCommand.header.stamp.sec = static_cast<int64_t>(floor(time));
+    velocityCommand.header.stamp.nsec = static_cast<int64_t>((time - floor(time)) * cGiga);
+    ROS_INFO("%f %f", time, velocity);
 
     publisher.publish(velocityCommand);
 

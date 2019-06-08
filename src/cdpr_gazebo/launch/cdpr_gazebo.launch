@@ -15,26 +15,26 @@
   <!-- spawn robot -->
   <node name="cdpr_gazebo_simulator" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-sdf -model cube -file $(find cdpr_gazebo)/sdf/cube.sdf -x 0.0 -y -0.0 -z 0.0 -R 0.0 -P 0.0 -Y 0.0">
     <param name="publishPeriod"              value="0.0" />
-    <param name="velocityEpsilon"            value="0.001" />
-    <param name="velocityControllerForward"  value="100"/>
-    <param name="velocityControllerP"        value="160"/> <!--20.0"-->
-    <param name="velocityControllerI"        value="80"/> <!--6.051 /-->
-    <param name="velocityControllerD"        value="0.1"/> <!-- 0.1 is safe for unit step velocity target /-->
-    <param name="velocityControllerDdegree"  value="3"/>
-    <param name="velocityControllerDbuffer"  value="11"/>
+    <param name="velocityEpsilon"            value="-0.001" />
+    <param name="velocityControllerForward"  value="0"/>
+    <param name="velocityControllerP"        value="50"/>
+    <param name="velocityControllerI"        value="40"/>
+    <param name="velocityControllerD"        value="1"/>
+    <param name="velocityControllerDdegree"  value="2"/>
+    <param name="velocityControllerDbuffer"  value="21"/>
     <param name="velocityControllerMaxI"     value="100.0" />
     <param name="velocityControllerMaxCmd"   value="100.0" />
     <param name="velocityControllerPcutoff"  value="0.1" /> <!-- relative to fs -->
     <param name="velocityControllerPquality" value="0.707" /> <!-- 2nd order Butterworth -->
-    <param name="velocityControllerPcascade" value="1" />
+    <param name="velocityControllerPcascade" value="0" />
     <param name="velocityControllerDcutoff"  value="0.1" />
     <param name="velocityControllerDquality" value="0.707" />
-    <param name="velocityControllerDcascade" value="1" />
-    <param name="positionControllerP"        value="40.0" /> 
-    <param name="positionControllerI"        value="10.0" />
-    <param name="positionControllerD"        value="10" />
-    <param name="positionControllerDdegree"  value="3"/>
-    <param name="positionControllerDbuffer"  value="5"/>
+    <param name="velocityControllerDcascade" value="0" />
+    <param name="positionControllerP"        value="50.0" /> 
+    <param name="positionControllerI"        value="40.8" />
+    <param name="positionControllerD"        value="30.3" />
+    <param name="positionControllerDdegree"  value="2"/>
+    <param name="positionControllerDbuffer"  value="11"/>
     <param name="positionControllerMaxI"     value="100.0" />
     <param name="positionControllerMaxCmd"   value="100.0" />
 <!-- Tu=0.4 s at Ku=100, Ziegler-Nichols no overshoot>
