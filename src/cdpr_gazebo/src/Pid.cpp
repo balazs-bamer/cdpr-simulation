@@ -156,7 +156,7 @@ pidMsg.axes[1] = iTerm;
       derived = derive(error, aNow);
       mDerr = mDfilter.update(derived);
 if(theZeroest) {
-pidMsg.axes[3] = derived;
+pidMsg.axes[3] = aDesired; //derived;
 gzdbg << "E " << error << "  derived " << derived << "  mDerr " << mDerr;
 }
     }

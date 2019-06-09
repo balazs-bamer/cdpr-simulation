@@ -17,11 +17,11 @@
     <param name="publishPeriod"              value="0.0" />
     <param name="velocityEpsilon"            value="-0.001" />
     <param name="velocityControllerForward"  value="0"/>
-    <param name="velocityControllerP"        value="50"/>
-    <param name="velocityControllerI"        value="40"/>
+    <param name="velocityControllerP"        value="200"/>
+    <param name="velocityControllerI"        value="20"/>
     <param name="velocityControllerD"        value="1"/>
     <param name="velocityControllerDdegree"  value="2"/>
-    <param name="velocityControllerDbuffer"  value="21"/>
+    <param name="velocityControllerDbuffer"  value="11"/>
     <param name="velocityControllerMaxI"     value="100.0" />
     <param name="velocityControllerMaxCmd"   value="100.0" />
     <param name="velocityControllerPcutoff"  value="0.1" /> <!-- relative to fs -->
