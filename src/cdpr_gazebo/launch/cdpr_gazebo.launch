@@ -30,9 +30,9 @@
     <param name="velocityControllerDcutoff"  value="0.1" />
     <param name="velocityControllerDquality" value="0.707" />
     <param name="velocityControllerDcascade" value="0" />
-    <param name="positionControllerP"        value="50.0" /> 
-    <param name="positionControllerI"        value="40.8" />
-    <param name="positionControllerD"        value="30.3" />
+    <param name="positionControllerP"        value="200.0" /> 
+    <param name="positionControllerI"        value="70.0" />
+    <param name="positionControllerD"        value="80.0" />
     <param name="positionControllerDdegree"  value="2"/>
     <param name="positionControllerDbuffer"  value="11"/>
     <param name="positionControllerMaxI"     value="100.0" />
