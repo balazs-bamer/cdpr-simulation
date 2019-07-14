@@ -1,6 +1,14 @@
 # cdpr-simulation
 Cable-driven parallel robot simulation
 
+The Gazebo model and its generation, and partially the Gazebo plugin is based on this work: [Franklin Okoli, Yuchuan Lang, Olivier Kermorgant, Stéphane Caro, "Cable-Driven Parallel Robot simulation using Gazebo and ROS", The 22nd CISM IFToMM Symposium on Robot Design, Dynamics and Control, Jun 2018, Rennes, France ](https://hal.archives-ouvertes.fr/hal-01757531v1)
+
+The deep learning solution is based on RAI:
+[legedrobotics/RAI](https://bitbucket.org/leggedrobotics/rai/src/master/)
+
+"journal{hwangbo2017control,
+title={Control of a Quadrotor with Reinforcement Learning}, author={Hwangbo, Jemin and Sa, Inkyu and Siegwart, Roland and Hutter, Marco}, journal={IEEE Robotics and Automation Letters}, year={2017}, publisher={IEEE} }"
+
 ## Invocation
 
 ### Gazebo plugin:
@@ -18,8 +26,6 @@ roslaunch launch/cdpr_gazebo.launch
 ```bash
 rosrun cdpr_gazebo sinevelocitytest
 ```
-
-The Gazebo model and its generation, and partially the Gazebo plugin is based on this work: [Franklin Okoli, Yuchuan Lang, Olivier Kermorgant, Stéphane Caro, "Cable-Driven Parallel Robot simulation using Gazebo and ROS", The 22nd CISM IFToMM Symposium on Robot Design, Dynamics and Control, Jun 2018, Rennes, France ](https://hal.archives-ouvertes.fr/hal-01757531v1)
 
 ### Compile Tensorflow 1.13.1 using Cuda 10.0
 

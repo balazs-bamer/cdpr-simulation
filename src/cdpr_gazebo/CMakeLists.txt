@@ -3,11 +3,11 @@ project(cdpr_gazebo)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
-if(COMPILER_SUPPORTS_CXX14)
-  add_compile_options(-std=c++14)
+CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
+if(COMPILER_SUPPORTS_CXX17)
+  add_compile_options(-std=c++17)
 else()
-  message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. Please use a different C++ compiler.")
+  message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
 endif()
 
 ## Find catkin macros and libraries
@@ -149,6 +149,7 @@ add_dependencies(cdpr_gazebo_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_executable(sinevelocitytest src/sinevelocitytest.cpp)
 add_executable(squarevelocitytest src/squarevelocitytest.cpp)
 add_executable(squarepositiontest src/squarepositiontest.cpp)
+add_executable(RaiCompileTest src/RaiCompileTest.cpp)
 target_link_libraries(sinevelocitytest ${catkin_LIBRARIES})
 target_link_libraries(squarevelocitytest ${catkin_LIBRARIES})
 target_link_libraries(squarepositiontest ${catkin_LIBRARIES})
